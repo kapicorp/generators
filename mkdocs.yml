@@ -1,0 +1,127 @@
+# dependencies:
+# pip install mkdocs mkdocs-material pymdown-extensions
+site_name: "Kapitan Generators"
+site_url: "https://generators.kapitan.dev"
+strict: false
+docs_dir: docs
+plugins:
+  - search
+extra_css:
+  - stylesheets/custom.css
+theme:
+  name: material
+  custom_dir: overrides
+  logo: images/kapitan_logo.png
+  favicon: images/kapitan_logo.png
+  features:
+    - announce.dismiss
+    - content.code.annotate
+    - content.tabs.link
+    - navigation.instant
+    - navigation.indexes
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      media: "(prefers-color-scheme: light)"
+      primary: black
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - scheme: slate
+      media: "(prefers-color-scheme: dark)"
+      primary: black
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+extra:
+  consent:
+    title: Cookie consent
+    description: >-
+      We use cookies to recognize your repeated visits and preferences, as well
+      as to measure the effectiveness of our documentation and whether users
+      find what they're searching for. With your consent, you're helping us to
+      make our documentation better.
+  social:
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/kapitandev
+      name: kapitan on Twitter
+    - icon: fontawesome/brands/slack
+      link: https://kubernetes.slack.com/archives/C981W2HD3
+      name: "#kapitan slack channel"
+  analytics:
+    provider: google
+    property: G-5E934SC0R8
+    feedback:
+      title: Was this page helpful?
+      ratings:
+        - icon: material/emoticon-happy-outline
+          name: This page was helpful
+          data: 1
+          note: >-
+            Thanks for your feedback!
+        - icon: material/emoticon-sad-outline
+          name: This page could be improved
+          data: 0
+          note: >-
+            Thanks for your feedback! Help us improve this page by
+            using our <a href="..." target="_blank" rel="noopener">feedback form</a>.
+use_directory_urls: true
+nav:
+  - Home: index.md
+  - Develop: develop.md
+  - Available Generators:
+    - Kubernetes: kubernetes.md
+    - Ingresses: ingresses.md
+    - Terraform: terraform.md
+    - ArgoCD: argocd.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.arithmatex
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.snippets:
+      base_path: examples
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+      options:
+        custom_icons:
+          - overrides/.icons
+  - pymdownx.inlinehilite
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+  - attr_list
+  - abbr
+
+repo_name: "kapicorp/generators"
+repo_url: "https://github.com/kapicorp/generators"
+
+copyright: >
+  <a href="#__consent">Change cookie settings</a>
