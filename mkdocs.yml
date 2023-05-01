@@ -5,7 +5,6 @@ site_url: "https://generators.kapitan.dev"
 strict: false
 docs_dir: docs
 plugins:
-
   - search
 extra_css:
   - stylesheets/custom.css
