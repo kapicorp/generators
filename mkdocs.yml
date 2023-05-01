@@ -10,7 +10,6 @@ extra_css:
   - stylesheets/custom.css
 theme:
   name: material
-  custom_dir: overrides
   logo: images/kapitan_logo.png
   favicon: images/kapitan_logo.png
   features:
