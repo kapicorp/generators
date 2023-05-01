@@ -29,10 +29,10 @@ The same configuration can be used by a "***Documentation Generator***" to creat
 
 | Name | Description | Documentation |
 | ---- | ----------- | -------------- |
-| [documentation](documentation) | Documentation generator | [Documentation](documentation/README.md)
-| [ingresses](ingresses) | Kubernetes Ingress generator | [Documentation](ingresses/README.md)
-| [kubernetes](kubernetes) | Kubernetes resources generator | [Documentation](kubernetes/README.md)|
-| [terraform](terraform) | Terraform generator | [Documentation](terraform/README.md)
+| [documentation](documentation) | Documentation generator | [Documentation](../documentation/README.md)
+| [ingresses](ingresses) | Kubernetes Ingress generator | [Documentation](../ingresses/README.md)
+| [kubernetes](kubernetes) | Kubernetes resources generator | [Documentation](../kubernetes/README.md)|
+| [terraform](terraform) | Terraform generator | [Documentation](../terraform/README.md)
 ## Community
 
 ### Generators by [neXenio](https://www.nexenio.com/)
