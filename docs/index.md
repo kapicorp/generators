@@ -16,6 +16,6 @@ parameters:
       image: nginx
 ```
 
-Instructs the "***Kubernetes Generator***" to create a `Deployment` kubernete resoures for nginx. The configuration can be extended to include Secrets, Config Maps, Services, env variables, ports and more. 
+Instructs the "***Kubernetes Generator***" to create a `Deployment` kubernete resoures for nginx. The configuration can be extended to include Secrets, Config Maps, Services, env variables, ports and more.
 
 The same configuration can be used by a "***Documentation Generator***" to create a `nginx.md` file with a description of the configuration to be consumed as documentation.

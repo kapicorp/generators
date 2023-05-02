@@ -1,4 +1,5 @@
 {% set p = inventory.parameters %}
+
 # {{p.target_name}}
 
 |||
@@ -9,7 +10,9 @@
 | **Namespace**   | `{{p.namespace}}` |
 
 {% if p.components is defined %}
+
 ## Components
+
 | Inventory definition | Documentation |
 | --- | --- |
 {% for component in p.components|sort %}

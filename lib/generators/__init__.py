@@ -7,12 +7,7 @@ from box.box_list import BoxList
 from box.exceptions import BoxValueError
 from kapitan.cached import args
 from kapitan.inputs.helm import HelmChart
-from kapitan.inputs.kadet import (
-    BaseModel,
-    CompileError,
-    Dict,
-    inventory,
-)
+from kapitan.inputs.kadet import BaseModel, CompileError, Dict, inventory
 from kapitan.utils import render_jinja2_file
 
 inventory = inventory(lazy=True)
@@ -54,6 +49,7 @@ def findpath(obj, path, default=None):
     else:
         return findpath(value, ".".join(path_parts[1:]))
 
+
 def patch_config(config, paths):
     """Patch config with patches from inventory paths"""
     patched_config = Dict(config)
@@ -70,8 +66,10 @@ def patch_config(config, paths):
         patched_config = merge(patch, patched_config)
     return patched_config, patches_applied
 
+
 def register_generator(*args, **kwargs):
     """Register a generator function"""
+
     def wrapper(func):
         @functools.wraps(func)
         def wrapped_func():
@@ -79,16 +77,18 @@ def register_generator(*args, **kwargs):
 
             results = []
             for name, config in configs.items():
-                patched_config, patches = patch_config(config, kwargs.get("apply_patches", []))
+                patched_config, patches = patch_config(
+                    config, kwargs.get("apply_patches", [])
+                )
 
                 output = func(
                     name=name,
                     config=patched_config,
                     patches_applied=patches,
                     original_config=config,
-                    **kwargs
+                    **kwargs,
                 )
-                
+
                 if isinstance(output.root, list):
                     results.extend(output.root)
                 else:
