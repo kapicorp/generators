@@ -6,6 +6,7 @@ strict: false
 docs_dir: docs
 plugins:
   - search
+  - mkdocstrings
 extra_css:
   - stylesheets/custom.css
 theme:
@@ -60,7 +61,7 @@ extra:
       name: "#kapitan slack channel"
   analytics:
     provider: google
-    property: G-5E934SC0R8
+    property: G-LPSPG0D0Q0
     feedback:
       title: Was this page helpful?
       ratings:

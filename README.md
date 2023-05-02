@@ -2,7 +2,7 @@
 
 This repository contains the current effors in creating **`Kapitan`** **Generators**
 
-This are meant to be used as part of the **`Kapitan `** project and not on their own. 
+This are meant to be used as part of the **`Kapitan `** project and not on their own.
 Please see <kapitan.dev> or <https://github.com/kapicorp/kapitan-reference> to get started.
 
 ## What are **Generators**
@@ -21,7 +21,7 @@ parameters:
       image: nginx
 ```
 
-Instructs the "***Kubernetes Generator***" to create a `Deployment` kubernete resoures for nginx. The configuration can be extended to include Secrets, Config Maps, Services, env variables, ports and more. 
+Instructs the "***Kubernetes Generator***" to create a `Deployment` kubernete resoures for nginx. The configuration can be extended to include Secrets, Config Maps, Services, env variables, ports and more.
 
 The same configuration can be used by a "***Documentation Generator***" to create a `nginx.md` file with a description of the configuration to be consumed as documentation.
 
@@ -33,6 +33,7 @@ The same configuration can be used by a "***Documentation Generator***" to creat
 | [ingresses](ingresses) | Kubernetes Ingress generator | [Documentation](../ingresses/README.md)
 | [kubernetes](kubernetes) | Kubernetes resources generator | [Documentation](../kubernetes/README.md)|
 | [terraform](terraform) | Terraform generator | [Documentation](../terraform/README.md)
+
 ## Community
 
 ### Generators by [neXenio](https://www.nexenio.com/)

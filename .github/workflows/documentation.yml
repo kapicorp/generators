@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@main
-      
+
       - name: Deploy docs
         uses: mhausenblas/mkdocs-deploy-gh-pages@master
         env:
