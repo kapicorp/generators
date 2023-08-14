@@ -1,27 +1,27 @@
 import logging
 
-from kapitan.inputs.kadet import BaseModel, BaseObj, load_from_search_paths
-
-kgenlib = load_from_search_paths("generators")
-
 logger = logging.getLogger(__name__)
 
+from kapitan.inputs.kadet import BaseObj, load_from_search_paths
 
-class ResourceType(BaseModel):
-    kind: str
-    id: str
-    api_version: str
+kgenlib = load_from_search_paths("kgenlib")
 
 
 class KubernetesResource(kgenlib.BaseContent):
-    resource_type: ResourceType
     name: str
+    api_version: str
+    kind: str
     namespace: str = None
     config: dict = None
-    api_version: str = None
-    kind: str = None
     rendered_name: str = None
-    id: str = None
+
+    def __eq__(self, other):
+        return (
+            self.root.metadata.name == other.root.metadata.name
+            and self.root.kind == other.root.kind
+            and self.root.apiVersion == other.root.apiVersion
+            and self.root.metadata.namespace == other.root.metadata.namespace
+        )
 
     @classmethod
     def from_baseobj(cls, baseobj: BaseObj):
@@ -29,10 +29,9 @@ class KubernetesResource(kgenlib.BaseContent):
 
         kind = baseobj.root.kind
         api_version = baseobj.root.apiVersion
-        id = kind.lower()
+        name = baseobj.root.metadata.name
 
-        resource_type = ResourceType(kind=kind, api_version=api_version, id=id)
-        resource = cls(resource_type=resource_type, name=baseobj.root.metadata.name)
+        resource = cls(name=name, api_version=api_version, kind=kind)
         resource.root = baseobj.root
         return resource
 
@@ -41,9 +40,6 @@ class KubernetesResource(kgenlib.BaseContent):
         return self.get_label("app.kapicorp.dev/component") or self.name
 
     def new(self):
-        self.kind = self.resource_type.kind
-        self.api_version = self.resource_type.api_version
-        self.id = self.resource_type.id
         if self.config:
             if not self.namespace:
                 self.namespace = self.config.get("namespace", None)
@@ -80,7 +76,7 @@ class KubernetesResource(kgenlib.BaseContent):
         for key, value in annotations.items():
             self.add_annotation(key, value)
 
-    def add_namespace(self, namespace: str):
+    def set_namespace(self, namespace: str):
         self.root.metadata.namespace = namespace
 
     def set_labels(self, labels: dict):
