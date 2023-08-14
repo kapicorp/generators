@@ -1,43 +1,72 @@
 import contextvars
-import functools
 import logging
 from enum import Enum
-from types import FunctionType
 from typing import List
 
 import yaml
 from box.exceptions import BoxValueError
 from kapitan.cached import args
 from kapitan.inputs.helm import HelmChart
-from kapitan.inputs.kadet import BaseModel, BaseObj, CompileError, Dict, current_target
+from kapitan.inputs.kadet import (
+    BaseModel,
+    BaseObj,
+    CompileError,
+    Dict,
+    current_target,
+    inventory_global,
+)
 from kapitan.utils import render_jinja2_file
 
 logger = logging.getLogger(__name__)
 
 search_paths = args.get("search_paths")
 registered_generators = contextvars.ContextVar(
-    "current registered_generators in thread"
+    "current registered_generators in thread", default={}
 )
 
 target = current_target.get()
-registered_generators.set({})
+
+
+class DeleteContent(Exception):
+    # Raised when a content should be deleted
+    pass
+
+
+def patch_config(config: Dict, inventory: Dict, inventory_path: str) -> None:
+    """Apply patch to config"""
+    patch = findpath(inventory, inventory_path, {})
+    logger.debug(f"Applying patch {inventory_path} : {patch}")
+    merge(patch, config)
 
 
 def register_function(func, params):
+    target = current_target.get()
     logging.debug(
         f"Registering generator {func.__name__} with params {params} for target {target}"
     )
+
     my_dict = registered_generators.get()
-    my_dict.setdefault(target, []).append((func, params))
+    generator_list = my_dict.get(target, [])
+    generator_list.append((func, params))
+
+    logging.debug(
+        f"Currently registered {len(generator_list)} generators for target {target}"
+    )
+
+    my_dict[target] = generator_list
+
     registered_generators.set(my_dict)
 
 
 def merge(source, destination):
     for key, value in source.items():
         if isinstance(value, dict):
-            node = destination.setdefault(key, value)
+            node = destination.get(key, None)
             if node is None:
                 destination[key] = value
+            elif len(node) == 0:
+                # node is set to an empty dict on purpose as a way to override the value
+                pass
             else:
                 merge(value, node)
         else:
@@ -48,6 +77,27 @@ def merge(source, destination):
 
 def render_jinja(filename, ctx):
     return render_jinja2_file(filename, ctx, search_paths=search_paths)
+
+
+def findpaths_by_property(obj: dict, property: str) -> dict:
+    """
+    Traverses the whole dictionary looking of objects containing a given property.
+
+    Args:
+        obj: the dictionary to scan for a given property
+        property: the key to look for in a dictionary
+
+    Returns:
+        A dictionary with found objects. Keys in the dictionary are the "name" properties of these objects.
+    """
+    res = {}
+    for k, v in obj.items():
+        if k == property:
+            res[obj["name"]] = obj
+        if isinstance(v, dict):
+            sub_results = findpaths_by_property(v, property)
+            res = {**res, **sub_results}
+    return res
 
 
 def findpath(obj, path, default={}):
@@ -63,6 +113,10 @@ def findpath(obj, path, default={}):
         if value is not None:
             return value
         logging.info(f"Key {e} not found in {obj}: ignoring")
+    except AttributeError as e:
+        if value is not None:
+            return value
+        logging.info(f"Attribute {e} not found in {obj}: ignoring")
 
     if len(path_parts) == 1:
         return value
@@ -91,6 +145,9 @@ class ContentType(Enum):
 class BaseContent(BaseModel):
     content_type: ContentType = ContentType.YAML
     filename: str = "output"
+
+    def body(self):
+        pass
 
     @classmethod
     def from_baseobj(cls, baseobj: BaseObj):
@@ -145,7 +202,7 @@ class BaseContent(BaseModel):
             if action == "delete":
                 for condition in conditions:
                     if self.match(condition["conditions"]):
-                        self = None
+                        raise DeleteContent(f"Deleting {self} because of {condition}")
             if action == "bundle":
                 for condition in conditions:
                     if self.match(condition["conditions"]):
@@ -165,7 +222,7 @@ class BaseContent(BaseModel):
         return True
 
     def patch(self, patch):
-        self.root.merge_update(Dict(patch))
+        self.root.merge_update(Dict(patch), box_merge_lists="extend")
 
 
 class BaseStore(BaseModel):
@@ -221,6 +278,9 @@ class BaseStore(BaseModel):
         for content in self.get_content_list():
             try:
                 content.mutate(mutations)
+            except DeleteContent as e:
+                logging.debug(e)
+                self.content_list.remove(content)
             except:
                 raise CompileError(f"Error when processing mutations on {content}")
 
@@ -236,8 +296,14 @@ class BaseStore(BaseModel):
                     output_format = output_filename
                 else:
                     output_format = getattr(content, "filename", "output")
-
                 filename = output_format.format(content=content)
+                file_content_list = self.root.get(filename, [])
+                if content in file_content_list:
+                    logger.debug(
+                        f"Skipping duplicated content content for reason 'Duplicate name {content.name} for {filename}'"
+                    )
+                    continue
+
                 self.root.setdefault(filename, []).append(content)
 
         return super().dump()
@@ -245,9 +311,13 @@ class BaseStore(BaseModel):
 
 class BaseGenerator:
     def __init__(
-        self, inventory: Dict, store: BaseStore = None, defaults_path: str = None
+        self,
+        inventory: Dict,
+        store: BaseStore = None,
+        defaults_path: str = None,
     ) -> None:
         self.inventory = inventory
+        self.global_inventory = inventory_global()
         self.generator_defaults = findpath(self.inventory, defaults_path)
         logging.debug(f"Setting {self.generator_defaults} as generator defaults")
 
@@ -256,17 +326,27 @@ class BaseGenerator:
         else:
             self.store = store()
 
-    def expand_and_run(self, func, params):
-        inventory = self.inventory
+    def expand_and_run(self, func, params, inventory=None):
+        if inventory == None:
+            inventory = self.inventory
+
         path = params.get("path")
+        activation_property = params.get("activation_property")
         patches = params.get("apply_patches", [])
-        configs = findpath(inventory.parameters, path)
+        if path is not None:
+            configs = findpath(inventory.parameters, path)
+        elif activation_property is not None:
+            configs = findpaths_by_property(inventory.parameters, activation_property)
+        else:
+            raise CompileError(
+                f"generator need to provide either 'path' or 'activation_property'"
+            )
+
         if configs:
             logging.debug(
                 f"Found {len(configs)} configs to generate at {path} for target {target}"
             )
-
-        for name, config in configs.items():
+        for config_id, config in configs.items():
             patched_config = Dict(config)
             patch_paths_to_apply = patches
             patches_applied = []
@@ -282,14 +362,18 @@ class BaseGenerator:
                 patched_config = merge(patch, patched_config)
 
             local_params = {
-                "name": name,
+                "id": config_id,
+                "name": patched_config.get("name", config_id),
                 "config": patched_config,
                 "patches_applied": patches_applied,
                 "original_config": config,
                 "defaults": self.generator_defaults,
+                "inventory": inventory,
+                "global_inventory": self.global_inventory,
+                "target": current_target.get(),
             }
             logging.debug(
-                f"Running class {func.__name__} with params {local_params.keys()} and name {name}"
+                f"Running class {func.__name__} for {config_id} with params {local_params.keys()}"
             )
             self.store.add(func(**local_params))
 
@@ -299,7 +383,31 @@ class BaseGenerator:
             f"{len(generators)} classes registered as generators for target {target}"
         )
         for func, params in generators:
+            activation_path = params.get("activation_path", False)
+            global_generator = params.get("global_generator", False)
+            if activation_path and global_generator:
+                logger.debug(
+                    f"Running global generator {func.__name__} with activation path {activation_path}"
+                )
+                if not findpath(self.inventory.parameters, activation_path):
+                    logger.debug(
+                        f"Skipping global generator {func.__name__} with params {params}"
+                    )
+                    continue
+                else:
+                    logger.debug(
+                        f"Running global generator {func.__name__} with params {params}"
+                    )
 
-            logging.debug(f"Expanding {func.__name__} with params {params}")
-            self.expand_and_run(func=func, params=params)
+                    for _, inventory in self.global_inventory.items():
+                        self.expand_and_run(
+                            func=func, params=params, inventory=inventory
+                        )
+            elif not global_generator:
+                logger.debug(f"Expanding {func.__name__} with params {params}")
+                self.expand_and_run(func=func, params=params)
+            else:
+                logger.debug(
+                    f"Skipping generator {func.__name__} with params {params} because not global and no activation path"
+                )
         return self.store

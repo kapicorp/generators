@@ -1,14 +1,15 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 import base64
 import hashlib
 import logging
 import os
 
-from kapitan.inputs.kadet import Dict, load_from_search_paths
+from kapitan.inputs.kadet import Dict
 
-from .common import KubernetesResource, ResourceType
-
-logger = logging.getLogger(__name__)
-kgenlib = load_from_search_paths("generators")
+from .common import KubernetesResource, kgenlib
 
 
 class SharedConfig(KubernetesResource):
@@ -25,20 +26,18 @@ class SharedConfig(KubernetesResource):
     def encode_string(unencoded_string):
         return base64.b64encode(unencoded_string.encode("ascii")).decode("ascii")
 
-    def setup_metadata(self, inventory):
-        namespace = inventory.parameters.get("namespace", None)
-
+    def setup_metadata(self):
+        namespace = None
         if self.component:
             namespace = self.component.get("namespace", namespace)
 
         namespace = self.config.get("namespace", namespace)
 
         if namespace:
-            self.add_namespace(namespace)
+            self.set_namespace(namespace)
 
         self.add_annotations(self.config.get("annotations", {}).copy())
         self.add_labels(self.config.get("labels", {}).copy())
-        self.setup_global_defaults(inventory=inventory)
 
         self.items = self.config["items"]
 
@@ -77,9 +76,7 @@ class SharedConfig(KubernetesResource):
         self.root[field][key] = self.encode_string(value) if encode else value
 
     def add_string_data(self, string_data, encode=False, stringdata=True):
-
         for key, spec in string_data.items():
-
             if "value" in spec:
                 value = spec.get("value")
             if "template" in spec:
@@ -106,8 +103,65 @@ class SharedConfig(KubernetesResource):
 
 
 class ConfigMap(SharedConfig):
-    resource_type = ResourceType(kind="ConfigMap", api_version="v1", id="config_map")
+    kind = "ConfigMap"
+    api_version = "v1"
 
 
 class Secret(SharedConfig):
-    resource_type = ResourceType(kind="Secret", api_version="v1", id="secret")
+    kind = "Secret"
+    api_version = "v1"
+
+
+class ComponentConfig(ConfigMap):
+    config: Dict
+
+    def body(self):
+        super().body()
+        self.setup_metadata()
+        self.versioning_enabled = self.config.get("versioned", False)
+        if getattr(self, "workload", None) and self.workload.root.metadata.name:
+            self.add_label("name", self.workload.root.metadata.name)
+        self.add_data(self.config.data)
+        self.add_directory(self.config.directory, encode=False)
+        if getattr(self, "workload", None):
+            self.workload.add_volumes_for_object(self)
+
+
+class ComponentSecret(Secret):
+    config: Dict
+
+    def new(self):
+        super().new()
+
+    def body(self):
+        super().body()
+        self.root.type = self.config.get("type", "Opaque")
+        self.versioning_enabled = self.config.get("versioned", False)
+        if getattr(self, "workload", None) and self.workload.root.metadata.name:
+            self.add_label("name", self.workload.root.metadata.name)
+        self.setup_metadata()
+        if self.config.data:
+            self.add_data(self.config.data)
+        if self.config.string_data:
+            self.add_string_data(self.config.string_data)
+        self.add_directory(self.config.directory, encode=True)
+        if getattr(self, "workload", None):
+            self.workload.add_volumes_for_object(self)
+
+
+@kgenlib.register_generator(
+    path="generators.kubernetes.secrets",
+    apply_patches=["generators.manifest.default_resource"],
+)
+class SecretGenerator(kgenlib.BaseStore):
+    def body(self):
+        self.add(ComponentSecret(name=self.name, config=self.config))
+
+
+@kgenlib.register_generator(
+    path="generators.kubernetes.config_maps",
+    apply_patches=["generators.manifest.default_resource"],
+)
+class ConfigGenerator(kgenlib.BaseStore):
+    def body(self):
+        self.add(ComponentConfig(name=self.name, config=self.config))

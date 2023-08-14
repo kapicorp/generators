@@ -1,42 +1,33 @@
-from kapitan.inputs.kadet import load_from_search_paths
+import logging
 
-from .common import KubernetesResource, ResourceType
+logger = logging.getLogger(__name__)
 
-kgenlib = load_from_search_paths("generators")
+from .common import KubernetesResource, kgenlib
 
 
 class Role(KubernetesResource):
-    resource_type = ResourceType(
-        kind="Role", api_version="rbac.authorization.k8s.io/v1", id="role"
-    )
-
-    def new(self):
-        super().new()
+    kind = "Role"
+    api_version = "rbac.authorization.k8s.io/v1"
 
     def body(self):
         super().body()
         config = self.config
-        self.root.rules = config.role.rules
+        self.root.rules = config["role"]["rules"]
 
 
 class RoleBinding(KubernetesResource):
-    resource_type = ResourceType(
-        kind="RoleBinding",
-        api_version="rbac.authorization.k8s.io/v1",
-        id="role_binding",
-    )
-
-    def new(self):
-        super().new()
+    kind = "RoleBinding"
+    api_version = "rbac.authorization.k8s.io/v1"
 
     def body(self):
         super().body()
         config = self.config
         sa = self.sa
+        name = config.get("name", self.name)
         default_role_ref = {
             "apiGroup": "rbac.authorization.k8s.io",
             "kind": "Role",
-            "name": config.name,
+            "name": name,
         }
         default_subject = [
             {
@@ -50,11 +41,8 @@ class RoleBinding(KubernetesResource):
 
 
 class ClusterRole(KubernetesResource):
-    resource_type = ResourceType(
-        kind="ClusterRole",
-        api_version="rbac.authorization.k8s.io/v1",
-        id="cluster_role",
-    )
+    kind = "ClusterRole"
+    api_version = "rbac.authorization.k8s.io/v1"
 
     def new(self):
         super().new()
@@ -66,14 +54,8 @@ class ClusterRole(KubernetesResource):
 
 
 class ClusterRoleBinding(KubernetesResource):
-    resource_type = ResourceType(
-        kind="ClusterRoleBinding",
-        api_version="rbac.authorization.k8s.io/v1",
-        id="cluster_role_binding",
-    )
-
-    def new(self):
-        super().new()
+    kind = "ClusterRoleBinding"
+    api_version = "rbac.authorization.k8s.io/v1"
 
     def body(self):
         super().body()
@@ -93,3 +75,41 @@ class ClusterRoleBinding(KubernetesResource):
         ]
         self.root.roleRef = config.get("roleRef", default_role_ref)
         self.root.subjects = config.get("subject", default_subject)
+
+
+@kgenlib.register_generator(path="generators.kubernetes.service_accounts")
+class ServiceAccountGenerator(kgenlib.BaseStore):
+    def body(self):
+        config = self.config
+        name = config.get("name", self.name)
+        namespace = config["namespace"]
+        sa = ServiceAccount(name=name, config=config)
+        sa.add_annotations(config.annotations)
+        sa.add_labels(config.labels)
+
+        roles = config.get("roles")
+        objs = [sa]
+        if roles is not None:
+            role_cfg = {"role": {"rules": roles}}
+            r = Role(name=f"{name}-role", namespace=namespace, config=role_cfg)
+            rb_cfg = {"name": r.name}
+            rb = RoleBinding(
+                name=f"{name}-role-binding", namespace=namespace, config=rb_cfg, sa=sa
+            )
+
+            objs += [r, rb]
+
+        self.add_list(objs)
+
+
+class ServiceAccount(KubernetesResource):
+    kind = "ServiceAccount"
+    api_version = "v1"
+
+    def new(self):
+        super().new()
+
+    def body(self):
+        super().body()
+        config = self.config
+        self.add_annotations(config.service_account.annotations)
