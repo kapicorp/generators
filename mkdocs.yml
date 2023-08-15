@@ -82,9 +82,7 @@ nav:
   - Develop: develop.md
   - Available Generators:
     - Kubernetes: kubernetes.md
-    - Ingresses: ingresses.md
     - Terraform: terraform.md
-    - ArgoCD: argocd.md
 
 markdown_extensions:
   - admonition
