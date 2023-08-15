@@ -79,7 +79,12 @@ extra:
 use_directory_urls: true
 nav:
   - Home: index.md
-  - Develop: develop.md
+  - Develop Generators: 
+    - tutorial.md
+    - Classes:
+      - basecontent.md
+      - basestore.md
+      - basegenerator.md
   - Available Generators:
     - Kubernetes: kubernetes.md
     - Terraform: terraform.md
