@@ -263,7 +263,10 @@ class BaseContent(BaseModel):
             if action == "bundle":
                 for condition in conditions:
                     if self.match(condition["conditions"]):
-                        self.filename = condition["filename"].format(content=self)
+                        try:
+                            self.filename = condition["filename"].format(content=self)
+                        except (AttributeError, KeyError):
+                            pass
                         if condition.get("break", True):
                             break
 
@@ -339,14 +342,17 @@ class BaseStore(BaseModel):
             self.content_list.append(object)
         elif isinstance(object, BaseStore):
             self.content_list.extend(object.content_list)
+
         elif isinstance(object, list):
             for item in object:
                 if isinstance(item, BaseObj):
                     self.add(BaseContent.from_baseobj(item))
                 else:
                     self.add_list(item)
+
         elif isinstance(object, BaseObj):
             self.add(BaseContent.from_baseobj(object))
+
         else:
             self.content_list.append(object)
 
@@ -368,7 +374,10 @@ class BaseStore(BaseModel):
             **kwargs: Keyword arguments for the HelmChart object.
         """
         self.add_list(
-            [BaseContent.from_baseobj(resource) for resource in HelmChart(**kwargs).root.values()]
+            [
+                BaseContent.from_baseobj(resource)
+                for resource in HelmChart(**kwargs).root.values()
+            ]
         )
 
     def apply_patch(self, patch: Dict):
@@ -407,7 +416,7 @@ class BaseStore(BaseModel):
         Returns:
             List[BaseContent]: List of BaseContent objects stored.
         """
-        return self.content_list
+        return getattr(self, "content_list", [])
 
     def dump(self, output_filename=None, already_processed=False):
         """
@@ -438,7 +447,6 @@ class BaseStore(BaseModel):
                 self.root.setdefault(filename, []).append(content)
 
         return super().dump()
-
 
 
 class BaseGenerator:
@@ -484,7 +492,7 @@ class BaseGenerator:
             patches_applied = []
             for path in patch_paths_to_apply:
                 try:
-                    path = path.format(**config)
+                    path = path.format(**patched_config)
                 except KeyError:
                     # Silently ignore missing keys
                     continue
