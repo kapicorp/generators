@@ -197,7 +197,7 @@ class GenGoogleServiceAccount(TerraformStore):
                 role_name = f"{resource_name}_{role_id}"
                 sa_role = GoogleResource(
                     id=role_name,
-                    type="google_project_iam_member",
+                    type="gcp_project_id_iam_member",
                     config=config,
                     defaults=self.defaults,
                 )
@@ -294,7 +294,7 @@ class GenGoogleServiceAccount(TerraformStore):
                     iam_member_resource_name = f"{project_iam_name}_{role_id}"
                     iam_member = GoogleResource(
                         id=iam_member_resource_name,
-                        type="google_project_iam_member",
+                        type="gcp_project_id_iam_member",
                         config=config,
                         defaults=self.defaults,
                     )
@@ -343,7 +343,7 @@ class GenGoogleContainerCluster(TerraformStore):
         cluster.set(config)
         cluster.filename = self.filename
         cluster.resource.setdefault("depends_on", []).append(
-            "google_project_service.container"
+            "gcp_project_id_service.container"
         )
 
         self.add(cluster)

@@ -48,8 +48,8 @@ class VerticalPodAutoscaler(KubernetesResource):
         self.root.spec.targetRef.apiVersion = workload.api_version
         self.root.spec.targetRef.kind = workload.kind
         self.root.spec.targetRef.name = workload.name
-        self.root.spec.updatePolicy.updateMode = config.vpa.update_mode
-        self.root.spec.resourcePolicy = config.vpa.resource_policy
+        self.root.spec.updatePolicy.updateMode = config.vpa.get("update_mode", "Auto")
+        self.root.spec.resourcePolicy = config.vpa.get("resource_policy", {})
 
 
 class HorizontalPodAutoscaler(KubernetesResource):

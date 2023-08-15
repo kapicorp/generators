@@ -453,7 +453,7 @@ secrets:
         value: my_secret
         b64_encode: true
       better_secret:
-        value: ?{gkms:targets/${target_name}/password||randomstr|base64}
+        value: ?{gkms:targets/${target_name}/password||random:str|base64}
 ```
 
 which will generate an truly encrypted secret using Google KMS (other backends also available)
@@ -503,7 +503,7 @@ parameters:
         plain-plain-connection:
           string_data:
             CONNECTION:
-              value: postgresql://?{plain:targets/${target_name}/shared-password-plain-as-plain-user||randomstr:35}:?{plain:targets/${target_name}/shared-password-plain-as-plain-pass||randomstr:35}/database
+              value: postgresql://?{plain:targets/${target_name}/shared-password-plain-as-plain-user||random:str:35}:?{plain:targets/${target_name}/shared-password-plain-as-plain-pass||random:str:35}/database
 ```
 
 ## Deployment
