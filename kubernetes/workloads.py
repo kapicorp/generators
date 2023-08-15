@@ -13,9 +13,11 @@ from .autoscaling import (
     VerticalPodAutoscaler,
 )
 from .common import KubernetesResource, kgenlib
-from .networking import HealthCheckPolicy, Service
-from .rbac import ServiceAccount
+from .base import MutatingWebhookConfiguration
+from .networking import HealthCheckPolicy, Service, NetworkPolicy
+from .rbac import ServiceAccount, Role, RoleBinding, ClusterRole, ClusterRoleBinding
 from .storage import ComponentConfig, ComponentSecret
+from .prometheus import ServiceMonitor, PrometheusRule
 
 
 class GenerateMultipleObjectsForClass(kgenlib.BaseStore):
