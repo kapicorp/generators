@@ -12,14 +12,8 @@
     ...
     ```
 
-2. Now, import this module in the main generator class by updating `system/generators/kubernetes/__init__.py`:
-    ```python
-    ...
-    from .fish import *
-    ...
-    ```
 
-3. Register the generator classes with Kapitan using the `@kgenlib.register_generator` annotation. Here's an example:
+1. Register the generator classes with Kapitan using the `@kgenlib.register_generator` annotation. Here's an example:
 
     ```python
     @kgenlib.register_generator(
@@ -36,12 +30,12 @@
 
     When Kapitan runs, it matches dictionary items with the specified path, then invokes your `GenSimpleFishGenerator` class.
 
-4. Execute Kapitan to see the generated output:
+1. Execute Kapitan to see the generated output:
     ```bash
     ./kapitan compile -t tutorial
     ```
 
-5. Inspect the generated files:
+1. Inspect the generated files:
     ```bash
     git status compiled
     ```
