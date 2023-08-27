@@ -80,11 +80,18 @@ use_directory_urls: true
 nav:
   - Home: index.md
   - Develop Generators: 
-    - tutorial.md
+    - tutorial/concepts.md
+    - tutorial/target_generators.md
+    - tutorial/global_generators.md
+    - tutorial/setup.md
+    - tutorial/tutorial.md
+    - tutorial/patching.md
+    - tutorial/mutations.md
+    - tutorial/faq.md
     - Classes:
-      - basecontent.md
-      - basestore.md
-      - basegenerator.md
+      - tutorial/basecontent.md
+      - tutorial/basestore.md
+      - tutorial/basegenerator.md
   - Available Generators:
     - Kubernetes: kubernetes.md
     - Terraform: terraform.md
