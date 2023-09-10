@@ -32,11 +32,11 @@ target = current_target.get()
 def load_generators(name, path):
     from importlib import import_module
     from inspect import isclass
-    from pathlib import Path
     from pkgutil import iter_modules
+    import os
 
     # iterate through the modules in the current package
-    package_dir = Path(path).resolve().parent
+    package_dir = os.path.abspath(os.path.dirname(path))
     for _, module_name, _ in iter_modules([package_dir]):
         # import the module and iterate through its attributes
         module = import_module(f"{name}.{module_name}")
