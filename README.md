@@ -2,7 +2,7 @@
 
 This repository contains the current efforts in creating **`Kapitan`** **Generators**.
 
-These are meant to be used as part of the **`Kapitan `** project and not on their own.
+These are meant to be used as part of the **`Kapitan`** project and not on their own.
 Please see <kapitan.dev> or <https://github.com/kapicorp/kapitan-reference> to get started.
 
 ## What are **Generators**
