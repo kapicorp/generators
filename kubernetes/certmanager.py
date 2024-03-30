@@ -7,8 +7,8 @@ from .common import KubernetesResource, kgenlib
 
 @kgenlib.register_generator(path="certmanager.issuer")
 class CertManagerIssuer(KubernetesResource):
-    kind = "Issuer"
-    api_version = "cert-manager.io/v1"
+    kind: str = "Issuer"
+    api_version: str = "cert-manager.io/v1"
 
     def body(self):
         config = self.config
@@ -18,8 +18,8 @@ class CertManagerIssuer(KubernetesResource):
 
 @kgenlib.register_generator(path="certmanager.cluster_issuer")
 class CertManagerClusterIssuer(KubernetesResource):
-    kind = "ClusterIssuer"
-    api_version = "cert-manager.io/v1"
+    kind: str = "ClusterIssuer"
+    api_version: str = "cert-manager.io/v1"
 
     def body(self):
         config = self.config
@@ -29,8 +29,8 @@ class CertManagerClusterIssuer(KubernetesResource):
 
 @kgenlib.register_generator(path="certmanager.certificate")
 class CertManagerCertificate(KubernetesResource):
-    kind = "Certificate"
-    api_version = "cert-manager.io/v1"
+    kind: str = "Certificate"
+    api_version: str = "cert-manager.io/v1"
 
     def body(self):
         config = self.config

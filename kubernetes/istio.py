@@ -6,8 +6,8 @@ from .common import KubernetesResource
 
 
 class IstioPolicy(KubernetesResource):
-    kind = "IstioPolicy"
-    api_version = "authentication.istio.io/v1alpha1"
+    kind: str = "IstioPolicy"
+    api_version: str = "authentication.istio.io/v1alpha1"
 
     def body(self):
         super().body()

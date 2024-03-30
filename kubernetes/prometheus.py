@@ -2,7 +2,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from .common import KubernetesResource, kgenlib
+from typing import Any, Dict, List, Optional
+
+from .common import KubernetesResource, KubernetesResourceSpec, kgenlib
 
 
 @kgenlib.register_generator(
@@ -10,17 +12,17 @@ from .common import KubernetesResource, kgenlib
     apply_patches=["generators.prometheus.defaults.gen_pod_monitoring"],
 )
 class PodMonitoring(KubernetesResource):
-    kind = "PodMonitoring"
-    api_version = "monitoring.googleapis.com/v1"
+    kind: str = "PodMonitoring"
+    api_version: str = "monitoring.googleapis.com/v1"
 
     def body(self):
         super().body()
-        self.root.spec = self.config
+        self.root.spec = self.config.spec
 
 
 class PrometheusRule(KubernetesResource):
-    kind = "PrometheusRule"
-    api_version = "monitoring.coreos.com/v1"
+    kind: str = "PrometheusRule"
+    api_version: str = "monitoring.coreos.com/v1"
 
     def body(self):
         super().body()
@@ -32,13 +34,15 @@ class PrometheusRule(KubernetesResource):
 
 
 class ServiceMonitor(KubernetesResource):
-    kind = "ServiceMonitor"
-    api_version = "monitoring.coreos.com/v1"
+    kind: str = "ServiceMonitor"
+    api_version: str = "monitoring.coreos.com/v1"
 
     def new(self):
         super().new()
 
     def body(self):
+        # TODO(ademaria) This name mangling is here just to simplify diff.
+        # Change it once done
         name = self.name
         workload = self.workload
         self.name = "{}-metrics".format(name)

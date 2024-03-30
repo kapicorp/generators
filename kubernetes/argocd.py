@@ -2,31 +2,40 @@ import json
 import logging
 
 logger = logging.getLogger(__name__)
-
 from .base import Namespace
-from .common import KubernetesResource, kgenlib
+from .common import KubernetesResource, KubernetesResourceSpec, kgenlib
+
+
+class ArgoCDApplicationConfigSpec(KubernetesResourceSpec):
+    project: str = "default"
+    destination: dict = {}
+    source: dict
+    sync_policy: dict = None
+    ignore_differences: dict = None
+
 
 class ArgoCDApplication(KubernetesResource):
     source: dict = None
-    kind = "Application"
-    api_version = "argoproj.io/v1alpha1"
+    kind: str = "Application"
+    api_version: str = "argoproj.io/v1alpha1"
+    cluster: dict = {}
+    config: ArgoCDApplicationConfigSpec
 
     def body(self):
+        self.root.spec.project = self.config.project
+        destination = self.config.destination
+        self.root.spec.destination.name = self.cluster.display_name or destination.name
+        self.root.spec.destination.namespace = destination.namespace
+        self.root.spec.source = self.config.source
+        self.root.spec.syncPolicy = self.config.sync_policy
+
+        self.root.spec.ignoreDifferences = self.config.ignore_differences
+
+        self.namespace = (
+            self.config.namespace or f"argocd-project-{self.config.project}"
+        )
+
         super().body()
-        project = self.config.get("project", "default")
-        self.root.spec.project = project
-        self.root.spec.destination = self.config.get("destination")
-        self.root.spec.source = self.config.get("source")
-        if self.config.get("sync_policy"):
-            self.root.spec.syncPolicy = self.config.get("sync_policy")
-
-        self.root.spec.ignoreDifferences = self.config.get("ignore_differences", None)
-        namespace = self.config.get("namespace", None)
-
-        if namespace is None:
-            namespace = f"argocd-project-{project}"
-
-        self.set_namespace(namespace)
 
 
 @kgenlib.register_generator(
@@ -40,27 +49,48 @@ class GenArgoCDApplication(kgenlib.BaseStore):
         config = self.config
         namespace = config.get("namespace", "argocd")
         name = config.get("name", self.name)
+        enabled = config.get("enabled", True)
+        clusters = self.inventory.parameters.get("clusters", {})
 
-        argo_application = ArgoCDApplication(
-            name=name, namespace=namespace, config=config
-        )
-        self.add(argo_application)
+        if enabled:
+            for cluster in clusters.keys():
+                cluster_config = clusters[cluster]
+                cluster_name = cluster_config.get("name")
+
+                id = f"{name}-{cluster_name}"
+                if len(clusters.keys()) == 1:
+                    id = name
+
+                argo_application = ArgoCDApplication(
+                    name=id,
+                    namespace=namespace,
+                    config=config,
+                    cluster=cluster_config,
+                )
+                self.add(argo_application)
+
+
+
+class ArgoCDProjectConfigSpec(KubernetesResourceSpec):
+    source_repos: list = []
+    destinations: list = []
+    cluster_resource_whitelist: list = []
+    source_namespaces: list = None
+
 
 class ArgoCDProject(KubernetesResource):
-    kind = "AppProject"
-    api_version = "argoproj.io/v1alpha1"
+    kind: str = "AppProject"
+    api_version: str = "argoproj.io/v1alpha1"
+    config: ArgoCDProjectConfigSpec
 
     def body(self):
         super().body()
-        self.root.spec.sourceRepos = self.config.get("source_repos")
-        self.root.spec.destinations = self.config.get("destinations")
-        if self.config.get("cluster_resource_whitelist"):
-            self.root.spec.clusterResourceWhitelist = self.config.get(
-                "cluster_resource_whitelist"
-            )
-        self.root.spec.sourceNamespaces = self.config.setdefault(
-            "source_namespaces", [f"argocd-project-{self.name}"]
-        )
+        self.root.spec.sourceRepos = self.config.source_repos
+        self.root.spec.destinations = self.config.destinations
+        self.root.spec.clusterResourceWhitelist = self.config.cluster_resource_whitelist
+        self.root.spec.sourceNamespaces = self.config.source_namespaces or [
+            f"argocd-project-{self.name}"
+        ]
 
 
 @kgenlib.register_generator(
@@ -78,7 +108,9 @@ class GenArgoCDProject(kgenlib.BaseStore):
 
 
 @kgenlib.register_generator(
-    path="clusters", global_generator=True, activation_path="argocd.clusters"
+    path="clusters",
+    global_generator=True,
+    activation_path="argocd.clusters",
 )
 class GenArgoCDCluster(kgenlib.BaseStore):
     def body(self):
@@ -91,13 +123,33 @@ class GenArgoCDCluster(kgenlib.BaseStore):
         self.add(cluster)
 
 
+class ArgoCDClusterConfigSpec(KubernetesResourceSpec):
+    display_name: str = None
+    endpoint_url: str
+    certificate: str
+
+
 class ArgoCDCluster(KubernetesResource):
-    kind = "Secret"
-    api_version = "v1"
+    kind: str = "Secret"
+    api_version: str = "v1"
+    config: ArgoCDClusterConfigSpec
 
     def body(self):
         super().body()
         self.add_label("argocd.argoproj.io/secret-type", "cluster")
-        self.root.stringData.name = self.config.argocd.name
+        self.root.stringData.name = self.config.display_name or self.name
         self.root.stringData.server = self.config.endpoint_url
-        self.root.stringData.config = json.dumps(self.config.argocd.config, indent=4)
+        self.root.stringData.config = json.dumps(
+            {
+                "execProviderConfig": {
+                    "command": "argocd-k8s-auth",
+                    "args": ["gcp"],
+                    "apiVersion": "client.authentication.k8s.io/v1beta1",
+                },
+                "tlsClientConfig": {
+                    "insecure": False,
+                    "caData": self.config.certificate,
+                },
+            },
+            indent=4,
+        )
