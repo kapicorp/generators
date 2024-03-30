@@ -5,14 +5,11 @@ from collections import defaultdict
 logger = logging.getLogger(__name__)
 
 from .common import (
-    TerraformData,
     TerraformResource,
     TerraformStore,
     cleanup_terraform_resource_id,
     kgenlib,
 )
-from .servicedirectory import gen_service_directory_service
-
 
 class GoogleResource(TerraformResource):
     def body(self):
