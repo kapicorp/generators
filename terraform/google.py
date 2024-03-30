@@ -1,14 +1,119 @@
+import json
 import logging
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
-from .common import TerraformResource, TerraformStore, kgenlib
+from .common import (
+    TerraformData,
+    TerraformResource,
+    TerraformStore,
+    cleanup_terraform_resource_id,
+    kgenlib,
+)
+from .servicedirectory import gen_service_directory_service
 
 
 class GoogleResource(TerraformResource):
     def body(self):
         self.resource.project = self.config.get("project")
         super().body()
+
+
+@kgenlib.register_generator(path="gen_google_organization_iam_policy")
+class GenGoogleOrgPolicyPolicy(TerraformStore):
+    def body(self):
+        self.filename = "gen_google_organization_iam_policy.tf"
+        bindings = self.config
+        id = self.id
+        gcp_organization_id = self.inventory.parameters.get("gcp_organization_id")
+
+        roles_dict = defaultdict(list)
+        roles_dict.update()
+
+        for name, spec in bindings.items():
+            roles = spec.get("roles")
+            role_id = spec.get("id", name)
+            for role in roles:
+                roles_dict[role].append(role_id)
+
+        policy_data = {
+            "bindings": [
+                {"role": role, "members": members}
+                for role, members in roles_dict.items()
+            ]
+        }
+
+        policy_file = kgenlib.BaseContent.from_dict(policy_data)
+        policy_file.filename = "policy"
+        self.add(policy_file)
+
+        legacy_policy = self.inventory.parameters.get("legacy_policy", {})
+        legacy_policy_file = kgenlib.BaseContent.from_dict(legacy_policy)
+        legacy_policy_file.filename = "policy-legacy"
+        self.add(legacy_policy_file)
+
+        iam_org_policy = GoogleResource(
+            id=id,
+            type="google_organization_iam_policy",
+        )
+
+        iam_org_policy.resource.pop(
+            "project"
+        )  # project is not supported for google_organization_iam_policy
+        iam_org_policy.resource.org_id = bindings.get(
+            "gcp_organization_id", gcp_organization_id
+        )
+        iam_org_policy.resource.policy_data = json.dumps(policy_data)
+
+        self.add(iam_org_policy)
+
+
+@kgenlib.register_generator(path="terraform.gen_google_org_policy_policy_org")
+class GenGoogleOrgPolicyPolicy(TerraformStore):
+    def body(self):
+        self.filename = "gen_google_org_policy_policy.tf"
+        config = self.config
+        id = self.id
+
+        policy = GoogleResource(
+            id=self.id.replace(".", "_"),
+            type="google_org_policy_policy",
+            config=config,
+            defaults=self.defaults,
+        )
+
+        organization_id = self.inventory.parameters.get("gcp_organization_id")
+        parent = config.get("parent", f"organizations/{organization_id}")
+        policy.resource.pop(
+            "project"
+        )  # project is not supported for google_org_policy_policy
+        policy.resource.name = f"{parent}/policies/{id}"
+        policy.resource.parent = parent
+
+        if config.get("reset", False):
+            policy.resource.spec.reset = config.get("reset", False)
+        else:
+            if config.get("enforce", False):
+                policy.resource.spec.rules.enforce = config.get("enforce", False)
+            elif config.get("default") == "allow":
+                policy.resource.spec.rules.allow_all = "TRUE"
+            elif config.get("default") == "deny":
+                policy.resource.spec.rules.deny_all = "TRUE"
+            else:
+                config.get("values", {})
+                values = config.get("values", {})
+                allowed_values = values.get("allowed_values", {})
+                denied_values = values.get("denied_values", {})
+                policy.resource.spec.rules.setdefault("values", {})[
+                    "allowed_values"
+                ] = allowed_values
+                policy.resource.spec.rules.setdefault("values", {})[
+                    "denied_values"
+                ] = denied_values
+
+        policy.filename = self.filename
+        self.add(policy)
 
 
 @kgenlib.register_generator(path="ingresses")
@@ -60,6 +165,7 @@ class GenRedisInstance(TerraformStore):
         instance.resource.tier = config["tier"]
         instance.resource.memory_size_gb = config["memory_size_gb"]
         instance.resource.region = config["region"]
+        instance.resource.labels = config.get("labels", {})
 
         record = GoogleResource(
             id=resource_id,
@@ -72,7 +178,7 @@ class GenRedisInstance(TerraformStore):
         record.resource.name = f'{config["endpoint"]}.'
         record.resource.managed_zone = dns_cfg["zone_name"]
         record.resource.type = dns_cfg["type"]
-        record.resource.ttl = dns_cfg["ttl"]
+        record.resource.ttl = dns_cfg.get("ttl", 600)
         record.resource.rrdatas = [f"${{google_redis_instance.{resource_id}.host}}"]
 
         resources = [instance, record]
@@ -162,6 +268,7 @@ class GenGoogleServiceAccount(TerraformStore):
                 sa_binding.resource.role = binding_role
                 sa_binding.resource.members = binding_config.members
                 sa_binding.filename = self.filename
+                sa_binding.resource.depends_on = [sa.get_reference(wrap=False)]
                 sa_binding.resource.pop(
                     "project"
                 )  # `project` is not supported for `service_account_iam_binding`
@@ -169,22 +276,53 @@ class GenGoogleServiceAccount(TerraformStore):
                 self.add(sa_binding)
 
         for iam_member_config in config.get("service_account_iam", []):
-            role = iam_member_config.role
             member = iam_member_config.member
+            sa_name = cleanup_terraform_resource_id(member.split("/")[-1])
+            service_account_id = sa.get_reference(attr="name", wrap=True)
+
+            role = iam_member_config.role
             iam_id = role.split("/")[1].replace(".", "_")
-            sa_name = member.split("/")[-1][:-1]
             iam_id = f"{iam_id}_{sa_name}"
+
             iam_member = GoogleResource(
                 id=f"{resource_id}_{iam_id}",
                 type="google_service_account_iam_member",
                 config=config,
                 defaults=self.defaults,
             )
-            iam_member.resource.service_account_id = sa.get_reference(
-                attr="name", wrap=True
-            )
+            iam_member.filename = self.filename
+            iam_member.resource.service_account_id = service_account_id
             iam_member.resource.role = role
             iam_member.resource.member = member
+            iam_member.resource.depends_on = [sa.get_reference(wrap=False)]
+            iam_member.resource.pop(
+                "project"
+            )  # `project` is not supported for `service_account_iam_binding`
+
+            self.add(iam_member)
+
+        for iam_member_config in config.get("service_account_iam_for_self", []):
+            member = sa.get_reference(attr="member", wrap=True)
+            service_account_id = iam_member_config.service_account_id
+            sa_name = "self_" + cleanup_terraform_resource_id(
+                service_account_id.split("/")[-1]
+            )
+
+            role = iam_member_config.role
+            iam_id = role.split("/")[1].replace(".", "_")
+            iam_id = f"{iam_id}_{sa_name}"
+
+            iam_member = GoogleResource(
+                id=f"{resource_id}_{iam_id}",
+                type="google_service_account_iam_member",
+                config=config,
+                defaults=self.defaults,
+            )
+            iam_member.filename = self.filename
+            iam_member.resource.service_account_id = service_account_id
+            iam_member.resource.role = role
+            iam_member.resource.member = member
+            iam_member.resource.depends_on = [sa.get_reference(wrap=False)]
             iam_member.resource.pop(
                 "project"
             )  # `project` is not supported for `service_account_iam_binding`
@@ -206,10 +344,12 @@ class GenGoogleServiceAccount(TerraformStore):
                 sa_role.resource.member = (
                     f"serviceAccount:{sa.get_reference(attr='email', wrap=True)}"
                 )
+                sa_role.resource.depends_on = [sa.get_reference(wrap=False)]
                 self.add(sa_role)
 
         if config.get("bucket_iam"):
-            for bucket_name, bucket_config in config.bucket_iam.items():
+            for config_bucket_name, bucket_config in config.bucket_iam.items():
+                bucket_name = bucket_config.get("name", config_bucket_name)
                 bucket_iam_name = f"{resource_name}_{bucket_name}"
 
                 for role in bucket_config.roles:
@@ -228,6 +368,7 @@ class GenGoogleServiceAccount(TerraformStore):
                         f"serviceAccount:{sa.get_reference(attr='email', wrap=True)}"
                     )
                     bucket_role.filename = self.filename
+                    bucket_role.resource.depends_on = [sa.get_reference(wrap=False)]
                     self.add(bucket_role)
 
         if config.get("pubsub_topic_iam"):
@@ -252,6 +393,7 @@ class GenGoogleServiceAccount(TerraformStore):
                     topic_role.resource.member = (
                         f"serviceAccount:{sa.get_reference(attr='email', wrap=True)}"
                     )
+                    topic_role.resource.depends_on = [sa.get_reference(wrap=False)]
                     topic_role.filename = self.filename
                     self.add(topic_role)
 
@@ -260,8 +402,6 @@ class GenGoogleServiceAccount(TerraformStore):
                 subscription_name,
                 subscription_config,
             ) in config.pubsub_subscription_iam.items():
-                if "subscription" in subscription_config:
-                    subscription_name = subscription_config.subscription
                 subscription_iam_name = f"{resource_name}_{subscription_name}"
                 project_name = subscription_config.project
 
@@ -275,8 +415,13 @@ class GenGoogleServiceAccount(TerraformStore):
                         defaults=self.defaults,
                     )
                     subscription_role.resource.project = project_name
-                    subscription_role.resource.subscription = subscription_name
+                    subscription_role.resource.subscription = (
+                        subscription_config.subscription
+                    )
                     subscription_role.resource.role = role
+                    subscription_role.resource.depends_on = [
+                        sa.get_reference(wrap=False)
+                    ]
                     subscription_role.resource.member = (
                         f"serviceAccount:{sa.get_reference(attr='email', wrap=True)}"
                     )
@@ -300,6 +445,7 @@ class GenGoogleServiceAccount(TerraformStore):
                     )
                     iam_member.resource.project = project_name
                     iam_member.resource.role = role
+                    iam_member.resource.depends_on = [sa.get_reference(wrap=False)]
                     iam_member.resource.member = (
                         f"serviceAccount:{sa.get_reference(attr='email', wrap=True)}"
                     )
@@ -317,6 +463,7 @@ class GenGoogleServiceAccount(TerraformStore):
                 repo_iam_member = gen_artifact_registry_repository_iam_member(
                     repo_iam_member_cfg, self.defaults
                 )
+                repo_iam_member.resource.depends_on = [sa.get_reference(wrap=False)]
                 self.add(repo_iam_member)
 
 
@@ -349,6 +496,11 @@ class GenGoogleContainerCluster(TerraformStore):
         self.add(cluster)
 
         for pool_name, pool_config in pools.items():
+            # pools are enabled by default
+            disabled = pool_config.pop("disabled", False)
+            if disabled:
+                continue
+
             pool = GoogleResource(
                 id=pool_name,
                 type="google_container_node_pool",
@@ -372,6 +524,28 @@ class GenGoogleContainerCluster(TerraformStore):
                     ]
 
             self.add(pool)
+
+        # Creates a configuration file for the cluster in the remote mcp repository
+        logger.debug(f"Processing configuration for cluster {name}")
+        configuration = TerraformResource(
+            id=name,
+            type="github_repository_file",
+            config=config,
+            defaults=self.defaults,
+        )
+
+        configuration.resource.branch = "main"
+        configuration.resource.file = (
+            f"{cluster.get_reference(attr='project', wrap=True)}/{name}.yml"
+        )
+        configuration.resource.repository = "mcp-remote"
+        configuration.resource.content = f'${{templatefile("cluster_inventory.tftpl", {{ cluster = {cluster.get_reference(wrap=False)} }})}}'
+        configuration.resource.commit_message = "Managed by Kapitan"
+        configuration.resource.commit_author = "Kapitan User"
+        configuration.resource.commit_email = "kapitan@kapicorp.com"
+        configuration.resource.overwrite_on_create = True
+
+        self.add(configuration)
 
 
 @kgenlib.register_generator(
@@ -440,7 +614,7 @@ class GoogleStorageBucketGenerator(TerraformStore):
 class GoogleArtifactRegistryGenerator(TerraformStore):
     def body(self):
         self.filename = "gen_google_artifact_registry_repository.tf"
-        resource_id = self.id
+        resource_id = cleanup_terraform_resource_id(self.id)
         config = self.config
         config.setdefault("repository_id", self.name)
         repo = GoogleResource(
@@ -462,7 +636,7 @@ class GoogleArtifactRegistryGenerator(TerraformStore):
                 repo_iam_member = gen_artifact_registry_repository_iam_member(
                     repo_iam_member_cfg, self.defaults
                 )
-
+                repo_iam_member.resource.depends_on = [repo.get_reference(wrap=False)]
                 self.add(repo_iam_member)
 
         self.add(repo)
@@ -477,13 +651,13 @@ def gen_artifact_registry_repository_iam_member(config, defaults):
 
     member_name = config.get("member_name")
     if member_name is None:
-        # turn serviceAccount:service-695xxxxx@gcp-sa-aiplatform.iam.gserviceaccount.com
-        # into service-695xxxx
+        # turn serviceAccount:service-695333208979@gcp-sa-aiplatform.iam.gserviceaccount.com
+        # into service-695333208979
         member_name = config.get("member").split("@")[0]
         member_name = member_name.split(":")[1]
 
     role_id = role.split("/")[-1].replace(".", "-")
-    name = config.get("name", f"{member_name}-{repo_name}-{role_id}")
+    name = config.get("name", f"{member_name}-{repo_name}-{role_id}").replace(".", "-")
     if name[0].isdigit():
         name = f"_{name}"
     iam_policy_config = {

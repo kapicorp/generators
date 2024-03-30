@@ -9,27 +9,29 @@ from .common import (
     TerraformProvider,
     TerraformResource,
     TerraformStore,
+    TerraformBlockTypes,
     kgenlib,
 )
 
 
 @kgenlib.register_generator(path="terraform.gen_backend")
 class Backend(TerraformBlock):
-    block_type = "terraform"
-    type = "backend"
+    type: TerraformBlockTypes = TerraformBlockTypes.BACKEND
 
     def body(self):
         config = self.config
 
         self.resource.bucket = config.get("bucket")
         self.resource.prefix = config.get("prefix")
+        self.resource.impersonate_service_account = config.get(
+            "impersonate_service_account"
+        )
         self.filename = "terraform.tf"
 
 
 @kgenlib.register_generator(path="terraform.gen_required_providers")
 class RequiredProvider(TerraformBlock):
-    block_type = "terraform"
-    type = "required_providers"
+    type: TerraformBlockTypes = TerraformBlockTypes.REQUIRED_PROVIDERS
 
     def body(self):
         config = self.config
@@ -41,11 +43,15 @@ class RequiredProvider(TerraformBlock):
 @kgenlib.register_generator(path="terraform.gen_provider")
 class Provider(TerraformStore):
     def body(self):
-        id = self.id
-        config = self.config
+        config = dict(self.config)
+
+        id = config.pop("id", self.id)
 
         provider = TerraformProvider(id=id, config=config)
         provider.set(config)
+
+        if config.get("alias"):
+            provider.filename = f"provider-{config.get('alias')}.tf"
 
         self.add(provider)
 
