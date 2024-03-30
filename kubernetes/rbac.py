@@ -2,28 +2,40 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from .common import KubernetesResource, kgenlib
+from typing import Any, Dict, List, Optional
+
+from pydantic import Field
+
+from .common import (
+    KubernetesResource,
+    KubernetesResourceSpec,
+    RoleBindingConfig,
+    WorkloadConfigSpec,
+    ServiceAccountComponentConfigSpec,
+    kgenlib,
+)
 
 
 class Role(KubernetesResource):
-    kind = "Role"
-    api_version = "rbac.authorization.k8s.io/v1"
+    kind: str = "Role"
+    api_version: str = "rbac.authorization.k8s.io/v1"
 
     def body(self):
         super().body()
         config = self.config
-        self.root.rules = config["role"]["rules"]
+        self.root.rules = config.role["rules"]
 
 
 class RoleBinding(KubernetesResource):
-    kind = "RoleBinding"
-    api_version = "rbac.authorization.k8s.io/v1"
+    kind: str = "RoleBinding"
+    api_version: str = "rbac.authorization.k8s.io/v1"
+    config: RoleBindingConfig
 
     def body(self):
         super().body()
         config = self.config
         sa = self.sa
-        name = config.get("name", self.name)
+        name = config.name or self.name
         default_role_ref = {
             "apiGroup": "rbac.authorization.k8s.io",
             "kind": "Role",
@@ -36,13 +48,13 @@ class RoleBinding(KubernetesResource):
                 "namespace": sa.namespace,
             }
         ]
-        self.root.roleRef = config.get("roleRef", default_role_ref)
-        self.root.subjects = config.get("subject", default_subject)
+        self.root.roleRef = config.roleRef or default_role_ref
+        self.root.subjects = config.subject or default_subject
 
 
 class ClusterRole(KubernetesResource):
-    kind = "ClusterRole"
-    api_version = "rbac.authorization.k8s.io/v1"
+    kind: str = "ClusterRole"
+    api_version: str = "rbac.authorization.k8s.io/v1"
 
     def new(self):
         super().new()
@@ -54,8 +66,8 @@ class ClusterRole(KubernetesResource):
 
 
 class ClusterRoleBinding(KubernetesResource):
-    kind = "ClusterRoleBinding"
-    api_version = "rbac.authorization.k8s.io/v1"
+    kind: str = "ClusterRoleBinding"
+    api_version: str = "rbac.authorization.k8s.io/v1"
 
     def body(self):
         super().body()
@@ -77,17 +89,27 @@ class ClusterRoleBinding(KubernetesResource):
         self.root.subjects = config.get("subject", default_subject)
 
 
+class ServiceAccountConfigSpec(KubernetesResourceSpec):
+    annotations: dict = {}
+    labels: dict = {}
+    namespace: Optional[str] = None
+    rendered_name: Optional[str] = None
+    name: Optional[str] = None
+    roles: Optional[List[Dict[str, Any]]] = None
+
+
 @kgenlib.register_generator(path="generators.kubernetes.service_accounts")
 class ServiceAccountGenerator(kgenlib.BaseStore):
+    name: str
+    config: ServiceAccountConfigSpec
+
     def body(self):
         config = self.config
-        name = config.get("name", self.name)
-        namespace = config["namespace"]
+        name = config.name or self.name
         sa = ServiceAccount(name=name, config=config)
-        sa.add_annotations(config.annotations)
-        sa.add_labels(config.labels)
+        namespace = config.namespace
 
-        roles = config.get("roles")
+        roles = config.roles
         objs = [sa]
         if roles is not None:
             role_cfg = {"role": {"rules": roles}}
@@ -103,13 +125,17 @@ class ServiceAccountGenerator(kgenlib.BaseStore):
 
 
 class ServiceAccount(KubernetesResource):
-    kind = "ServiceAccount"
-    api_version = "v1"
-
-    def new(self):
-        super().new()
+    kind: str = "ServiceAccount"
+    api_version: str = "v1"
+    config: Optional[ServiceAccountConfigSpec | WorkloadConfigSpec] = None
+    spec: Optional[ServiceAccountComponentConfigSpec] = None
 
     def body(self):
         super().body()
         config = self.config
-        self.add_annotations(config.service_account.annotations)
+
+        try:
+            self.add_annotations(config.annotations)
+        except:
+            logging.info(f"ServiceAccount body {config}")
+            raise

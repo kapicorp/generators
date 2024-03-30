@@ -4,9 +4,10 @@ logger = logging.getLogger(__name__)
 
 from .common import KubernetesResource
 
+
 class BackendConfig(KubernetesResource):
-    kind = "BackendConfig"
-    api_version = "cloud.google.com/v1"
+    kind: str = "BackendConfig"
+    api_version: str = "cloud.google.com/v1"
 
     def body(self):
         super().body()

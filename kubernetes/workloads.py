@@ -2,98 +2,59 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
+from kapitan.inputs.kadet import BaseModel, BaseObj, CompileError, Dict
 from typing import Any
-
-from kapitan.inputs.kadet import BaseModel, BaseObj, CompileError
-
 from .autoscaling import (
     HorizontalPodAutoscaler,
     KedaScaledObject,
     PodDisruptionBudget,
     VerticalPodAutoscaler,
 )
-from .common import KubernetesResource, kgenlib
 from .base import MutatingWebhookConfiguration
-from .networking import HealthCheckPolicy, Service, NetworkPolicy
-from .rbac import ServiceAccount, Role, RoleBinding, ClusterRole, ClusterRoleBinding
+from .common import (
+    ContainerEXECProbeSpec,
+    ContainerHTTPProbeSpec,
+    ContainerSpec,
+    ContainerTCPProbeSpec,
+    CronJobConfigSpec,
+    DeploymentConfigSpec,
+    JobConfigSpec,
+    KubernetesResource,
+    ProbeTypes,
+    StatefulSetConfigSpec,
+    WorkloadConfigSpec,
+    WorkloadTypes,
+    kgenlib,
+)
+from .gke import BackendConfig
+from .istio import IstioPolicy
+from .networking import HealthCheckPolicy, NetworkPolicy, Service
+from .prometheus import PrometheusRule, ServiceMonitor
+from .rbac import ClusterRole, ClusterRoleBinding, Role, RoleBinding, ServiceAccount
 from .storage import ComponentConfig, ComponentSecret
-from .prometheus import ServiceMonitor, PrometheusRule
-
-
-class GenerateMultipleObjectsForClass(kgenlib.BaseStore):
-    """Helper to generate multiple classes
-
-    As a convention for generators we have that if you define only one policy/config/secret configuration
-    for your component, then the name of that resource will be the component {name} itself.
-
-    However if there are multiple objects being defined, then we call them: {name}-{object_name}
-
-    This class helps achieve that for policies/config/secrets to avoid duplication.
-    """
-
-    component_config: dict
-    generating_class: Any
-    workload: Any
-
-    def body(self):
-        component_config = self.component_config
-        name = self.name
-        objects_configs = self.config
-        generating_class = self.generating_class
-        workload = self.workload
-
-        for object_name, object_config in objects_configs.items():
-            if object_config == None:
-                raise CompileError(
-                    f"error with '{object_name}' for component {name}: configuration cannot be empty!"
-                )
-
-            if len(objects_configs.items()) == 1:
-                name = f"{self.name}"
-            else:
-                name = f"{self.name}-{object_name}"
-
-            generated_object = generating_class(
-                name=name,
-                object_name=object_name,
-                config=object_config,
-                component=component_config,
-                workload=workload,
-            )
-
-            self.add(generated_object)
 
 
 class Workload(KubernetesResource):
-    @classmethod
-    def create_workflow(cls, name, config):
-        config = config
-        name = name
-        if config.type == "deployment":
-            workload = Deployment(name=name, config=config)
-        elif config.type == "statefulset":
-            workload = StatefulSet(name=name, config=config)
-        elif config.type == "daemonset":
-            workload = DaemonSet(name=name, config=config)
-        elif config.type == "job":
-            workload = Job(name=name, config=config)
-        else:
-            raise ()
+    def body(self):
+        super().body()
+        name = self.name
+        config = self.config
+        self.root.spec.template.spec.hostNetwork = config.host_network
+        self.root.spec.template.spec.hostPID = config.host_pid
 
-        workload.add_annotations(config.setdefault("annotations", {}))
-        workload.root.spec.template.metadata.annotations = config.get(
-            "pod_annotations", {}
+        self.root.spec.template.metadata.annotations.update(
+            config.pod_annotations or {}
         )
-        workload.add_labels(config.setdefault("labels", {}))
-        workload.add_volumes(config.setdefault("volumes", {}))
-        workload.add_volume_claims(config.setdefault("volume_claims", {}))
-        workload.root.spec.template.spec.securityContext = (
-            config.workload_security_context
-        )
-        workload.root.spec.minReadySeconds = config.min_ready_seconds
+        self.root.spec.template.metadata.labels.update(config.pod_labels)
+
+        self.add_volumes(config.volumes)
+        self.add_volume_claims(config.volume_claims)
+        self.root.spec.template.spec.securityContext = config.workload_security_context
+        self.root.spec.minReadySeconds = config.min_ready_seconds
         if config.service_account.enabled:
-            workload.root.spec.template.spec.serviceAccountName = (
-                config.service_account.get("name", name)
+            self.root.spec.template.spec.serviceAccountName = (
+                config.service_account.name or name
             )
 
         container = Container(name=name, config=config)
@@ -101,30 +62,24 @@ class Workload(KubernetesResource):
             Container(name=name, config=config)
             for name, config in config.additional_containers.items()
         ]
-        workload.add_containers([container])
-        workload.add_containers(additional_containers)
+        self.add_containers([container])
+        self.add_containers(additional_containers)
         init_containers = [
             Container(name=name, config=config)
             for name, config in config.init_containers.items()
         ]
 
-        workload.add_init_containers(init_containers)
-        if config.image_pull_secrets:
-            workload.root.spec.template.spec.imagePullSecrets = config.get(
-                "image_pull_secrets"
-            )
-        workload.root.spec.template.spec.dnsPolicy = config.dns_policy
-        workload.root.spec.template.spec.terminationGracePeriodSeconds = config.get(
-            "grace_period", 30
-        )
+        self.root.spec.template.spec.restartPolicy = config.restart_policy
+        self.add_init_containers(init_containers)
+        self.root.spec.template.spec.imagePullSecrets = config.image_pull_secrets
+        self.root.spec.template.spec.dnsPolicy = config.dns_policy
+        self.root.spec.template.spec.terminationGracePeriodSeconds = config.grace_period
 
-        if config.node_selector:
-            workload.root.spec.template.spec.nodeSelector = config.node_selector
+        self.root.spec.template.spec.nodeSelector = config.node_selector
 
-        if config.tolerations:
-            workload.root.spec.template.spec.tolerations = config.tolerations
+        self.root.spec.template.spec.tolerations = config.tolerations
 
-        affinity = workload.root.spec.template.spec.affinity
+        affinity = self.root.spec.template.spec.affinity
         if config.prefer_pods_in_node_with_expression and not config.node_selector:
             affinity.nodeAffinity.setdefault(
                 "preferredDuringSchedulingIgnoredDuringExecutio", []
@@ -168,13 +123,13 @@ class Workload(KubernetesResource):
                                 {"key": "app", "operator": "In", "values": [name]}
                             ]
                         },
-                        "topologyKey": "failure-domain.beta.kubernetes.io/zone",
+                        "topologyKey": "topology.kubernetes.io/zone",
                     },
                     "weight": 1,
                 }
             )
 
-        return workload
+        return self
 
     def set_replicas(self, replicas):
         self.root.spec.replicas = replicas
@@ -219,11 +174,11 @@ class Workload(KubernetesResource):
             {
                 "name": object_name,
                 key: {
-                    "defaultMode": object.config.get("default_mode", 420),
+                    "defaultMode": object.config.default_mode,
                     name_key: rendered_name,
                     "items": [
                         {"key": value, "path": value}
-                        for value in object.config.get("items", [])
+                        for value in object.config.items
                     ],
                 },
             }
@@ -231,8 +186,9 @@ class Workload(KubernetesResource):
 
 
 class Deployment(Workload):
-    kind = "Deployment"
-    api_version = "apps/v1"
+    kind: str = "Deployment"
+    api_version: str = "apps/v1"
+    config: DeploymentConfigSpec
 
     def body(self):
         default_strategy = {
@@ -247,27 +203,20 @@ class Deployment(Workload):
         self.root.spec.selector.setdefault("matchLabels", {}).update(
             config.labels + self.root.metadata.labels
         )
-        self.root.spec.template.spec.restartPolicy = config.get(
-            "restart_policy", "Always"
-        )
-        if "host_network" in config:
-            self.root.spec.template.spec.hostNetwork = config.host_network
-        if "host_pid" in config:
-            self.root.spec.template.spec.hostPID = config.host_pid
-        self.root.spec.strategy = config.get("update_strategy", default_strategy)
+        self.root.spec.strategy = config.update_strategy or default_strategy
         self.root.spec.revisionHistoryLimit = config.revision_history_limit
         self.root.spec.progressDeadlineSeconds = (
             config.deployment_progress_deadline_seconds
         )
-        self.set_replicas(config.get("replicas", 1))
+        self.set_replicas(config.replicas)
 
 
 class StatefulSet(Workload):
-    kind = "StatefulSet"
-    api_version = "apps/v1"
+    kind: str = "StatefulSet"
+    api_version: str = "apps/v1"
+    config: StatefulSetConfigSpec
 
     def body(self):
-        default_strategy = {}
         update_strategy = {"rollingUpdate": {"partition": 0}, "type": "RollingUpdate"}
 
         super().body()
@@ -279,23 +228,17 @@ class StatefulSet(Workload):
         self.root.spec.selector.setdefault("matchLabels", {}).update(
             config.labels + self.root.metadata.labels
         )
-        self.root.spec.template.spec.restartPolicy = config.get(
-            "restart_policy", "Always"
-        )
-        if "host_network" in config:
-            self.root.spec.template.spec.hostNetwork = config.host_network
-        if "host_pid" in config:
-            self.root.spec.template.spec.hostPID = config.host_pid
+
         self.root.spec.revisionHistoryLimit = config.revision_history_limit
-        self.root.spec.strategy = config.get("strategy", default_strategy)
-        self.root.spec.updateStrategy = config.get("update_strategy", update_strategy)
-        self.root.spec.serviceName = config.service.get("service_name", name)
-        self.set_replicas(config.get("replicas", 1))
+        self.root.spec.strategy = config.strategy
+        self.root.spec.updateStrategy = config.update_strategy or update_strategy
+        self.root.spec.serviceName = config.service.service_name or name
+        self.set_replicas(config.replicas)
 
 
 class DaemonSet(Workload):
-    kind = "DaemonSet"
-    api_version = "apps/v1"
+    kind: str = "DaemonSet"
+    api_version: str = "apps/v1"
 
     def body(self):
         super().body()
@@ -306,13 +249,6 @@ class DaemonSet(Workload):
         self.root.spec.selector.setdefault("matchLabels", {}).update(
             config.labels + self.root.metadata.labels
         )
-        self.root.spec.template.spec.restartPolicy = config.get(
-            "restart_policy", "Always"
-        )
-        if "host_network" in config:
-            self.root.spec.template.spec.hostNetwork = config.host_network
-        if "host_pid" in config:
-            self.root.spec.template.spec.hostPID = config.host_pid
         self.root.spec.revisionHistoryLimit = config.revision_history_limit
         self.root.spec.progressDeadlineSeconds = (
             config.deployment_progress_deadline_seconds
@@ -320,8 +256,9 @@ class DaemonSet(Workload):
 
 
 class Job(Workload):
-    kind = "Job"
-    api_version = "batch/v1"
+    kind: str = "Job"
+    api_version: str = "batch/v1"
+    config: JobConfigSpec
 
     def body(self):
         super().body()
@@ -329,37 +266,26 @@ class Job(Workload):
         self.root.spec.template.metadata.setdefault("labels", {}).update(
             config.labels + self.root.metadata.labels
         )
-        self.root.spec.template.spec.restartPolicy = config.get(
-            "restart_policy", "Never"
-        )
-        if "host_network" in config:
-            self.root.spec.template.spec.hostNetwork = config.host_network
-        if "host_pid" in config:
-            self.root.spec.template.spec.hostPID = config.host_pid
-        self.root.spec.backoffLimit = config.get("backoff_limit", 1)
-        self.root.spec.completions = config.get("completions", 1)
-        self.root.spec.parallelism = config.get("parallelism", 1)
+        self.root.spec.backoffLimit = config.backoff_limit
+        self.root.spec.completions = config.completions
+        self.root.spec.parallelism = config.parallelism
 
 
 class CronJob(Workload):
-    kind = "CronJob"
-    api_version = "batch/v1"
-    job: Job
+    kind: str = "CronJob"
+    api_version: str = "batch/v1"
+    config: CronJobConfigSpec
 
     def body(self):
         super().body()
         config = self.config
-        job = self.job
-        self.root.metadata = job.root.metadata
+        job = Job(name=self.name, config=config)
         self.root.spec.jobTemplate.spec = job.root.spec
         self.root.spec.schedule = config.schedule
+        self.root.spec.template = None
 
 
-class Container(BaseModel):
-    def new(self):
-        name: str
-        config: dict
-
+class Container(ContainerSpec):
     @staticmethod
     def find_key_in_config(key, configs):
         for name, config in configs.items():
@@ -420,9 +346,8 @@ class Container(BaseModel):
     def add_volume_mounts_from_configs(self):
         name = self.name
         config = self.config
-        configs = config.config_maps.items()
-        secrets = config.secrets.items()
-        for object_name, spec in configs:
+        objects = list(config.config_maps.items()) + list(config.secrets.items())
+        for object_name, spec in objects:
             if spec is None:
                 raise CompileError(
                     f"error with '{object_name}' for component {name}: configuration cannot be empty!"
@@ -438,48 +363,33 @@ class Container(BaseModel):
                         "subPath": spec.subPath,
                     }
                 ]
-        for object_name, spec in secrets:
-            if spec is None:
-                raise CompileError(
-                    f"error with '{object_name}' for component {name}: configuration cannot be empty!"
-                )
-
-            if "mount" in spec:
-                self.root.setdefault("volumeMounts", []).append(
-                    {
-                        "mountPath": spec.mount,
-                        "readOnly": spec.get("readOnly", None),
-                        "name": object_name,
-                        "subPath": spec.subPath,
-                    }
-                )
 
     def add_volume_mounts(self, volume_mounts):
         for key, value in volume_mounts.items():
             kgenlib.merge({"name": key}, value)
             self.root.setdefault("volumeMounts", []).append(value)
 
-    @staticmethod
-    def create_probe(probe_definition):
+    def create_probe(
+        self,
+        spec: ContainerEXECProbeSpec | ContainerHTTPProbeSpec | ContainerTCPProbeSpec,
+    ):
         probe = BaseObj()
-        if "type" in probe_definition:
-            probe.root.initialDelaySeconds = probe_definition.get(
-                "initial_delay_seconds", 0
-            )
-            probe.root.periodSeconds = probe_definition.get("period_seconds", 10)
-            probe.root.timeoutSeconds = probe_definition.get("timeout_seconds", 5)
-            probe.root.successThreshold = probe_definition.get("success_threshold", 1)
-            probe.root.failureThreshold = probe_definition.get("failure_threshold", 3)
+        if spec and spec.enabled:
+            probe.root.initialDelaySeconds = spec.initial_delay_seconds
+            probe.root.periodSeconds = spec.period_seconds
+            probe.root.timeoutSeconds = spec.timeout_seconds
+            probe.root.successThreshold = spec.success_threshold
+            probe.root.failureThreshold = spec.failure_threshold
 
-            if probe_definition.type == "http":
-                probe.root.httpGet.scheme = probe_definition.get("scheme", "HTTP")
-                probe.root.httpGet.port = probe_definition.get("port", 80)
-                probe.root.httpGet.path = probe_definition.path
-                probe.root.httpGet.httpHeaders = probe_definition.httpHeaders
-            if probe_definition.type == "tcp":
-                probe.root.tcpSocket.port = probe_definition.port
-            if probe_definition.type == "command":
-                probe.root.exec.command = probe_definition.command
+            if spec.type == ProbeTypes.HTTP:
+                probe.root.httpGet.scheme = spec.scheme
+                probe.root.httpGet.port = spec.port
+                probe.root.httpGet.path = spec.path
+                probe.root.httpGet.httpHeaders = spec.httpHeaders
+            elif spec.type == ProbeTypes.TCP:
+                probe.root.tcpSocket.port = spec.port
+            elif spec.type == ProbeTypes.EXEC:
+                probe.root.exec.command = spec.command
         return probe.root
 
     def body(self):
@@ -488,9 +398,8 @@ class Container(BaseModel):
 
         self.root.name = name
         self.root.image = config.image
-        self.root.imagePullPolicy = config.get("pull_policy", "IfNotPresent")
-        if config.lifecycle:
-            self.root.lifecycle = config.lifecycle
+        self.root.imagePullPolicy = config.image_pull_policy
+        self.root.lifecycle = config.lifecycle
         self.root.resources = config.resources
         self.root.args = config.args
         self.root.command = config.command
@@ -509,21 +418,22 @@ class Container(BaseModel):
             self.root.setdefault("ports", [])
             self.root.ports.append(
                 {
-                    "containerPort": port.get("container_port", port.service_port),
+                    "containerPort": port.container_port or port.service_port,
                     "name": name,
-                    "protocol": port.get("protocol", "TCP"),
+                    "protocol": port.protocol,
                 }
             )
 
-        self.root.startupProbe = self.create_probe(config.healthcheck.startup)
-        self.root.livenessProbe = self.create_probe(config.healthcheck.liveness)
-        self.root.readinessProbe = self.create_probe(config.healthcheck.readiness)
+        if config.healthcheck:
+            self.root.livenessProbe = self.create_probe(config.healthcheck.liveness)
+            self.root.readinessProbe = self.create_probe(config.healthcheck.readiness)
+            self.root.startupProbe = self.create_probe(config.healthcheck.startup)
         self.process_envs(config)
 
 
 class PodSecurityPolicy(KubernetesResource):
-    kind = "PodSecurityPolicy"
-    api_version = "policy/v1beta1"
+    kind: str = "PodSecurityPolicy"
+    api_version: str = "policy/v1beta1"
     workload: Workload
 
     def new(self):
@@ -549,156 +459,132 @@ class PodSecurityPolicy(KubernetesResource):
     path="components",
     apply_patches=[
         "generators.manifest.default_config",
-        "applications.\"{application}\".component_defaults",
+        'applications."{application}".component_defaults',
     ],
 )
 class Components(kgenlib.BaseStore):
+    config: WorkloadConfigSpec
+
+    def _add_component(
+        self, component_class, config_attr=None, name=None, workload=None, spec=None
+    ):
+        if config_attr and getattr(self.config, config_attr):
+            spec = spec or getattr(self.config, config_attr, {})
+            name = name or self.name
+            component = component_class(
+                name=name, config=self.config, spec=spec, workload=workload
+            )
+            self.add(component)
+            logger.debug(f"Added component {component.root.metadata} for {self.name}.")
+
+    def _generate_and_add_multiple_objects(
+        self, generating_class, config_attr, workload
+    ):
+        objects_configs = getattr(self.config, config_attr, {})
+
+        for object_name, object_config in objects_configs.items():
+            logger.debug(
+                f"Generating object {object_name} of type {generating_class.__name__} for {self.name}."
+            )
+
+            if object_config is None:
+                raise CompileError(
+                    f"error with '{object_name}' for component {self.name}: configuration cannot be empty!"
+                )
+
+            if len(objects_configs) == 1:
+                name = self.name
+            else:
+                name = f"{self.name}-{object_name}"
+
+            namespace = object_config.namespace or self.config.namespace or None
+            generated_object = generating_class(
+                name=name,
+                object_name=object_name,
+                namespace=namespace,
+                config=object_config.model_dump(),
+                component=self.config,
+                workload=workload,
+            )
+
+            self.add(generated_object)
+
     def body(self):
         name = self.name
         config = self.config
-        workload = Workload.create_workflow(name=name, config=config)
+        logger.debug(f"Generating components for {name} from {config}")
 
-        logging.debug(f"Generating component {name} from {config}")
-        if config.schedule:
-            workload = CronJob(name=name, config=config, job=workload)
+        if config.type == WorkloadTypes.DEPLOYMENT:
+            workload = Deployment(name=name, config=config.model_dump())
+        elif config.type == WorkloadTypes.STATEFULSET:
+            workload = StatefulSet(name=name, config=config.model_dump())
+        elif config.type == WorkloadTypes.DAEMONSET:
+            workload = DaemonSet(name=name, config=config.model_dump())
+        elif config.type == WorkloadTypes.JOB:
+            if config.schedule:
+                workload = CronJob(name=name, config=config.model_dump())
+            workload = Job(name=name, config=config.model_dump())
+        else:
+            raise ValueError(f"Unknown workload type: {config.type}")
 
-        workload.add_label("app.kapicorp.dev/component", name)
-
-        configs = GenerateMultipleObjectsForClass(
-            name=name,
-            component_config=config,
-            generating_class=ComponentConfig,
-            config=config.config_maps,
-            workload=workload,
+        self._generate_and_add_multiple_objects(
+            ComponentConfig, "config_maps", workload=workload
+        )
+        self._generate_and_add_multiple_objects(
+            ComponentSecret, "secrets", workload=workload
         )
 
-        map(lambda x: x.add_label("app.kapicorp.dev/component", name), configs)
-
-        secrets = GenerateMultipleObjectsForClass(
-            name=name,
-            component_config=config,
-            generating_class=ComponentSecret,
-            config=config.secrets,
-            workload=workload,
+        self._add_component(PodDisruptionBudget, "pdb_min_available", workload=workload)
+        self._add_component(HorizontalPodAutoscaler, "hpa", workload=workload)
+        self._add_component(VerticalPodAutoscaler, "vpa", workload=workload)
+        self._add_component(KedaScaledObject, "keda_scaled_object", workload=workload)
+        self._add_component(IstioPolicy, "istio_policy", workload=workload)
+        self._add_component(PodSecurityPolicy, "pod_security_policy", workload=workload)
+        self._add_component(
+            Service, "service", workload=workload, spec=self.config.service
         )
 
-        map(lambda x: x.add_label("app.kapicorp.dev/component", name), secrets)
+        for service_name, spec in config.additional_services.items():
+            logger.debug(f"Adding additional service {service_name} for {name}.")
+            self._add_component(
+                Service,
+                "additional_services",
+                workload=workload,
+                name=service_name,
+                spec=spec,
+            )
+
+        self._generate_and_add_multiple_objects(
+            NetworkPolicy, "network_policies", workload=workload
+        )
+        self._add_component(MutatingWebhookConfiguration, "webhooks")
+        self._add_component(ServiceMonitor, "service_monitors", workload=workload)
+        self._add_component(PrometheusRule, "prometheus_rules")
+
+        if self.config.service_account.create:
+            sa_name = self.config.service_account.name or self.name
+            self._add_component(ServiceAccount, "service_account", name=sa_name)
+
+            if self.config.role:
+                self._add_component(Role)
+                self._add_component(RoleBinding, spec=sa_name)
+
+            if self.config.cluster_role:
+                self._add_component(ClusterRole)
+                self._add_component(ClusterRoleBinding, spec=sa_name)
+
+        self._add_component(BackendConfig, "backend_config")
+
+        # Handling a special case where pdb_min_available or auto_pdb is set, but config.type isn't "job"
+        if self.config.type != "job" and (
+            self.config.pdb_min_available or self.config.auto_pdb
+        ):
+            self._add_component(PodDisruptionBudget, workload=workload)
 
         self.add(workload)
-        self.add(configs)
-        self.add(secrets)
 
-        if config.pdb_min_available:
-            pdb = PodDisruptionBudget(name=name, config=config, workload=workload)
-            pdb.add_label("app.kapicorp.dev/component", name)
-            self.add(pdb)
-
-        if config.hpa:
-            hpa = HorizontalPodAutoscaler(name=name, config=config, workload=workload)
-            hpa.add_label("app.kapicorp.dev/component", name)
-            self.add(hpa)
-
-        if config.get("vpa", False):
-            vpa = VerticalPodAutoscaler(name=name, config=config, workload=workload)
-            vpa.add_label("app.kapicorp.dev/component", name)
-            self.add(vpa)
-
-        if config.keda_scaled_object:
-            scaled_object = KedaScaledObject(
-                name=name, config=config, workload=workload
-            )
-            scaled_object.add_label("app.kapicorp.dev/component", name)
-            self.add(scaled_object)
-
-        if config.type != "job":
-            if config.pdb_min_available or config.auto_pdb:
-                pdb = PodDisruptionBudget(name=name, config=config, workload=workload)
-                pdb.add_label("app.kapicorp.dev/component", name)
-                self.add(pdb)
-
-        if config.istio_policy:
-            istio_policy = IstioPolicy(name=name, config=config, workload=workload)
-            istio_policy.add_label("app.kapicorp.dev/component", name)
-            self.add(istio_policy)
-
-        if config.pod_security_policy:
-            psp = PodSecurityPolicy(name=name, config=config, workload=workload)
-            psp.add_label("app.kapicorp.dev/component", name)
-            self.add(psp)
-
-        if config.service:
-            service = Service(
-                name=name,
-                config=config,
-                workload=workload,
-                service_spec=config.service,
-            )
-            service.add_label("app.kapicorp.dev/component", name)
-
-            self.add(service)
-
-        if config.additional_services:
-            for service_name, service_spec in config.additional_services.items():
-                service = Service(
-                    name=service_name,
-                    config=config,
-                    workload=workload,
-                    service_spec=service_spec,
-                )
-                service.add_label("app.kapicorp.dev/component", name)
-                self.add(service)
-
-        if config.network_policies:
-            policies = GenerateMultipleObjectsForClass(
-                name=name,
-                component_config=config,
-                generating_class=NetworkPolicy,
-                config=config.network_policies,
-                workload=workload,
-            )
-            map(lambda x: x.add_label("app.kapicorp.dev/component", name), policies)
-            self.add(policies)
-
-        if config.webhooks:
-            webhooks = MutatingWebhookConfiguration(name=name, config=config)
-            webhooks.add_label("app.kapicorp.dev/component", name)
-            self.add(webhooks)
-
-        if config.service_monitors:
-            service_monitor = ServiceMonitor(
-                name=name, config=config, workload=workload
-            )
-            service_monitor.add_label("app.kapicorp.dev/component", name)
-            self.add(service_monitor)
-
-        if config.prometheus_rules:
-            prometheus_rule = PrometheusRule(name=name, config=config)
-            prometheus_rule.add_label("app.kapicorp.dev/component", name)
-            self.add(prometheus_rule)
-
-        if config.service_account.get("create", False):
-            sa_name = config.service_account.get("name", name)
-            sa = ServiceAccount(name=sa_name, config=config)
-            sa.add_label("app.kapicorp.dev/component", name)
-            self.add(sa)
-
-        if config.role:
-            role = Role(name=name, config=config)
-            role.add_label("app.kapicorp.dev/component", name)
-            self.add(role)
-            role_binding = RoleBinding(name=name, config=config, sa=sa)
-            role_binding.add_label("app.kapicorp.dev/component", name)
-            self.add(role_binding)
-
-        if config.cluster_role:
-            cluster_role = ClusterRole(name=name, config=config)
-            self.add(cluster_role)
-            cluster_role.add_label("app.kapicorp.dev/component", name)
-            cluster_role_binding = ClusterRoleBinding(name=name, config=config, sa=sa)
-            cluster_role_binding.add_label("app.kapicorp.dev/component", name)
-            self.add(cluster_role_binding)
-
-        if config.backend_config:
-            backend_config = BackendConfig(name=name, config=config)
-            backend_config.add_label("app.kapicorp.dev/component", name)
-            self.add(backend_config)
+        # Patch Application
+        self.apply_patch(
+            {"metadata": {"labels": {"app.kapicorp.dev/component": self.name}}}
+        )
+        logger.debug(f"Applied metadata patch for {self.name}.")

@@ -2,52 +2,66 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from typing import Any
+from enum import StrEnum, auto
+from typing import Any, Dict, List, Optional
 
-from .common import KubernetesResource, kgenlib
+from kadet import BaseModel
+
+from .common import (
+    KubernetesResource,
+    KubernetesResourceSpec,
+    ServiceConfigSpec,
+    NetworkPolicySpec,
+    kgenlib,
+)
+
+
+class IngressConfigSpec(KubernetesResourceSpec):
+    host: Optional[str] = None
+    paths: List[Dict[str, Any]] = []
+    rules: List[Dict[str, Any]] = []
+    tls: Optional[List[Dict[str, Any]]] = None
+    default_backend: Optional[Dict[str, Any]] = None
 
 
 class Ingress(KubernetesResource):
-    kind = "Ingress"
-    api_version = "networking.k8s.io/v1"
-
-    def new(self):
-        super().new()
+    kind: str = "Ingress"
+    api_version: str = "networking.k8s.io/v1"
+    config: IngressConfigSpec
 
     def body(self):
         super().body()
         config = self.config
 
-        self.add_annotations(config.get("annotations", {}))
-        self.add_labels(config.get("labels", {}))
-        if "default_backend" in config:
+        if config.default_backend:
             self.root.spec.backend.service.name = config.default_backend.get("name")
             self.root.spec.backend.service.port = config.default_backend.get("port", 80)
-        if "paths" in config:
+        if config.paths:
             host = config.host
             paths = config.paths
             self.root.spec.setdefault("rules", []).extend(
                 [{"host": host, "http": {"paths": paths}}]
             )
-        if "rules" in config:
-            self.root.spec.setdefault("rules", []).extend(config.rules)
+        self.root.spec.setdefault("rules", []).extend(config.rules)
         if config.tls:
             self.root.spec.tls = config.tls
 
 
 class GoogleManagedCertificate(KubernetesResource):
-    kind = "ManagedCertificate"
-    api_version = "networking.gke.io/v1beta1"
+    kind: str = "ManagedCertificate"
+    api_version: str = "networking.gke.io/v1beta1"
 
     def body(self):
         super().body()
         config = self.config
-        self.root.spec.domains = config.get("domains", [])
+        self.root.spec.domains = config.domains
+
 
 
 class NetworkPolicy(KubernetesResource):
-    kind = "NetworkPolicy"
-    api_version = "networking.k8s.io/v1"
+    kind: str = "NetworkPolicy"
+    api_version: str = "networking.k8s.io/v1"
+    config: NetworkPolicySpec
 
     def body(self):
         super().body()
@@ -64,42 +78,80 @@ class NetworkPolicy(KubernetesResource):
 
 
 class HealthCheckPolicy(KubernetesResource):
-    kind = "HealthCheckPolicy"
-    api_version = "networking.gke.io/v1"
+    kind: str = "HealthCheckPolicy"
+    api_version: str = "networking.gke.io/v1"
 
     def body(self):
+        # Defaults from https://cloud.google.com/kubernetes-engine/docs/how-to/configure-gateway-resources#configure_health_check
         super().body()
         config = self.config
 
         self.root.spec.default.logConfig.enabled = config.healthcheck.get("log", False)
 
-        config_spec = self.root.spec.default.config
+        default_spec = self.root.spec.default
+
+        default_spec.checkIntervalSec = config.healthcheck.get("check_interval_sec", 5)
+        default_spec.timeoutSec = config.healthcheck.get(
+            "timeout_sec", default_spec.checkIntervalSec
+        )
+        default_spec.healthyThreshold = config.healthcheck.get("healthy_threshold", 2)
+        default_spec.unhealthyThreshold = config.healthcheck.get(
+            "unhealthy_threshold", 2
+        )
+
+        config_spec = default_spec.config
         container_port = config.healthcheck.get("container_port", self.name)
+
         config_spec.type = config.healthcheck.get("type", "HTTP").upper()
         if config_spec.type == "HTTP":
             config_spec.httpHealthCheck.portSpecification = "USE_FIXED_PORT"
             config_spec.httpHealthCheck.port = container_port
             config_spec.httpHealthCheck.requestPath = config.healthcheck.get(
-                "path", config.get("path", "/")
+                "path", config.path or "/"
             )
 
         self.root.spec.targetRef = {
             "group": "",
             "kind": "Service",
-            "name": config.get("service"),
+            "name": config.service,
         }
 
 
+class GatewaySupportedTypes(StrEnum):
+    GKE_L7_GLOBAL_EXTERNAL_MANAGED = "gke-l7-global-external-managed"
+    GKE_L7_GLOBAL_EXTERNAL_MANAGED_MC = "gke-l7-global-external-managed-mc"
+    GKE_L7_REGIONAL_EXTERNAL_MANAGED = "gke-l7-regional-external-managed"
+    GKE_L7_REGIONAL_EXTERNAL_MANAGED_MC = "gke-l7-regional-external-managed-mc"
+    GKE_L7_RILB = "gke-l7-rilb"
+    GKE_L7_RILB_MC = "gke-l7-rilb-mc"
+    GKE_L7_GXLB = "gke-l7-gxlb"
+    GKE_L7_GXLB_MC = "gke-l7-gxlb-mc"
+
+
+class FromNamespace(StrEnum):
+    SAME = "Same"
+    ALL = "All"
+
+
+class GatewayConfigSpec(KubernetesResourceSpec):
+    type: GatewaySupportedTypes
+    listeners: Optional[List[Dict[str, Any]]] = None
+    allowed_from_namespace: Optional[FromNamespace] = FromNamespace.SAME
+    certificate: Optional[str] = None
+    named_addresses: Optional[List[str]]
+
+
 class Gateway(KubernetesResource):
-    kind = "Gateway"
-    api_version = "gateway.networking.k8s.io/v1beta1"
+    kind: str = "Gateway"
+    api_version: str = "gateway.networking.k8s.io/v1beta1"
+    config: GatewayConfigSpec
 
     def body(self):
         super().body()
         self.root.spec.gatewayClassName = self.config.type
         default_listener = {"name": "http", "protocol": "HTTP", "port": 80}
 
-        certificate = self.config.get("certificate", None)
+        certificate = self.config.certificate
         if certificate:
             default_listener = {
                 "name": "https",
@@ -111,48 +163,97 @@ class Gateway(KubernetesResource):
                 },
             }
 
-        self.root.spec.listeners = self.config.listeners or [default_listener]
+        listeners = self.config.listeners or [default_listener]
+        allowed_routes = self.config.allowed_from_namespace or FromNamespace.SAME
 
-        if self.config.get("named_address"):
+        spec = {"allowedRoutes": {"namespaces": {"from": allowed_routes}}}
+        for listener in listeners:
+            listener.update(spec)
+        self.root.spec.listeners = listeners
+
+        for addresses in self.config.named_addresses or []:
             self.root.spec.setdefault("addresses", []).append(
-                {"type": "NamedAddress", "value": self.config.get("named_address")}
+                {"type": "NamedAddress", "value": addresses}
             )
 
 
+class GCPGatewayConfigSpec(KubernetesResourceSpec):
+    allow_global_access: bool = False
+    gateway_name: Optional[str]
+
+
 class GCPGatewayPolicy(KubernetesResource):
-    kind = "GCPGatewayPolicy"
-    api_version = "networking.gke.io/v1"
-    gateway: Gateway = None
+    kind: str = "GCPGatewayPolicy"
+    api_version: str = "networking.gke.io/v1"
+    config: GCPGatewayConfigSpec
 
     def body(self):
         super().body()
-        self.root.spec.default.allowGlobalAccess = self.config.get(
-            "allow_global_access", False
-        )
+        gateway_name = self.config.gateway_name
+        self.root.spec.default.allowGlobalAccess = self.config.allow_global_access
         self.root.spec.targetRef = {
             "group": "gateway.networking.k8s.io",
             "kind": "Gateway",
-            "name": self.gateway.name,
+            "name": gateway_name,
         }
 
 
-class HTTPRoute(KubernetesResource):
-    kind = "HTTPRoute"
-    api_version = "gateway.networking.k8s.io/v1beta1"
-    gateway: Gateway = None
+class GCPBackendConfigSpec(KubernetesResourceSpec):
+    timeout_sec: Optional[int] = 30
+    logging: Optional[Dict[str, Any]] = None
+
+
+class GCPBackendPolicy(KubernetesResource):
+    kind: str = "GCPBackendPolicy"
+    api_version: str = "networking.gke.io/v1"
+    config: GCPBackendConfigSpec
 
     def body(self):
         super().body()
+
+        self.root.spec.default.timeoutSec = self.config.timeout_sec or 30
+        self.root.spec.default.logging = self.config.logging or {"enabled": False}
+
+        self.root.spec.targetRef = {
+            "group": "",
+            "kind": "Service",
+            "name": self.config.service,
+        }
+
+
+class HTTPRouteSpec(KubernetesResourceSpec):
+    gateway_name: Optional[str]
+    gateway_namespace: Optional[str | None]
+    hostnames: Optional[List[str]]
+    rules: List[Dict[str, Any]] = []
+    services: Optional[Dict[str, Dict[str, Any]]]
+
+
+class HTTPRoute(KubernetesResource):
+    kind: str = "HTTPRoute"
+    api_version: str = "gateway.networking.k8s.io/v1beta1"
+    config: HTTPRouteSpec
+
+    def body(self):
+        super().body()
+
+        gateway_name = self.config.gateway_name
+        gateway_namespace = self.config.gateway_namespace
         self.root.spec.setdefault("parentRefs", []).append(
             {
                 "kind": "Gateway",
-                "name": self.gateway.name,
+                "name": gateway_name,
+                "namespace": gateway_namespace if gateway_namespace else None,
             }
         )
 
-        self.root.spec.hostnames = self.config.get("hostnames", [])
+        self.root.spec.hostnames = self.config.hostnames or []
 
-        for service_name, service_config in self.config.get("services", {}).items():
+        rules = self.config.rules or []
+        self.root.spec.setdefault("rules", []).extend(rules)
+
+        services = self.config.services or {}
+        for service_name, service_config in services.items():
             match = {"path": {"value": service_config.get("path", "/")}}
             rule = {
                 "backendRefs": [
@@ -163,92 +264,100 @@ class HTTPRoute(KubernetesResource):
                 ],
                 "matches": [match],
             }
+            filters = service_config.get("filters", [])
+            if filters:
+                rule["filters"] = filters
             self.root.spec.setdefault("rules", []).append(rule)
 
 
-@kgenlib.register_generator(
-    path="generators.kubernetes.gateway",
-)
+@kgenlib.register_generator(path="generators.kubernetes.gateway")
 class GatewayGenerator(kgenlib.BaseStore):
     def body(self):
         gateway = Gateway(name=self.name, config=self.config)
         self.add(gateway)
 
-        policy = GCPGatewayPolicy(name=self.name, config=self.config, gateway=gateway)
+        policy = GCPGatewayPolicy(
+            name=self.name,
+            config=dict(
+                self.config,
+                gateway_name=gateway.name,
+                gateway_namespace=gateway.namespace,
+            ),
+        )
         self.add(policy)
 
         for route_id, route_config in self.config.get("routes", {}).items():
             route_name = f"{self.name}-{route_id}"
-            route = HTTPRoute(name=route_name, config=route_config, gateway=gateway)
+            route = HTTPRoute(
+                name=route_name,
+                config=dict(
+                    route_config,
+                    gateway_name=gateway.name,
+                    gateway_namespace=gateway.namespace,
+                ),
+            )
             self.add(route)
 
             for service_id, service_config in route_config.get("services", {}).items():
                 healthcheck = HealthCheckPolicy(
-                    name=f"{route_name}-{service_id}",
-                    config=service_config,
-                    gateway=gateway,
+                    name=f"{service_id}", config=service_config
                 )
                 self.add(healthcheck)
 
+                backend_policy = GCPBackendPolicy(
+                    name=f"{service_id}", config=GCPBackendConfigSpec(**service_config)
+                )
+
+                self.add(backend_policy)
+
 
 class Service(KubernetesResource):
-    kind = "Service"
-    api_version = "v1"
-
-    service_spec: dict
-
-    def new(self):
-        super().new()
+    kind: str = "Service"
+    api_version: str = "v1"
+    workload: KubernetesResource
+    spec: ServiceConfigSpec
 
     def body(self):
+        super().body()
         config = self.config
         workload = self.workload.root
-        service_spec = self.service_spec
+        spec = self.spec
 
-        self.name = service_spec.get("service_name", self.name)
-        super().body()
+        self.name = spec.service_name or self.name
 
-        self.add_labels(config.get("labels", {}))
-        self.add_annotations(service_spec.annotations)
+        self.add_labels(config.labels)
+        self.add_annotations(spec.annotations)
         self.root.spec.setdefault("selector", {}).update(
             workload.spec.template.metadata.labels
         )
-        self.root.spec.setdefault("selector", {}).update(service_spec.selectors)
-        self.root.spec.type = service_spec.type
-        if service_spec.get("publish_not_ready_address", False):
-            self.root.spec.publishNotReadyAddresses = True
-        if service_spec.get("headless", False):
+        self.root.spec.setdefault("selector", {}).update(spec.selectors)
+        self.root.spec.type = spec.type
+        self.root.spec.publishNotReadyAddresses = spec.publish_not_ready_address
+        if spec.headless:
             self.root.spec.clusterIP = "None"
-        self.root.spec.clusterIP
-        self.root.spec.sessionAffinity = service_spec.get("session_affinity", "None")
+        self.root.spec.sessionAffinity = spec.session_affinity
         all_ports = [config.ports] + [
-            container.ports
-            for container in config.additional_containers.values()
-            if "ports" in container
+            container.ports for container in config.additional_containers.values()
         ]
 
         self.exposed_ports = {}
 
         for port in all_ports:
             for port_name in port.keys():
-                if (
-                    not service_spec.expose_ports
-                    or port_name in service_spec.expose_ports
-                ):
+                if not spec.expose_ports or port_name in spec.expose_ports:
                     self.exposed_ports.update(port)
 
         for port_name in sorted(self.exposed_ports):
             self.root.spec.setdefault("ports", [])
             port_spec = self.exposed_ports[port_name]
-            port_spec["name"] = port_name
-            service_port = port_spec.get("service_port", None)
+            service_port = port_spec.service_port
             if service_port:
                 self.root.spec.setdefault("ports", []).append(
                     {
                         "name": port_name,
                         "port": service_port,
                         "targetPort": port_name,
-                        "protocol": port_spec.get("protocol", "TCP"),
+                        "protocol": port_spec.protocol,
                     }
                 )
 
