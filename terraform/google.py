@@ -4,12 +4,17 @@ from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
+from kapitan.inputs.kadet import Dict
+
 from .common import (
+    TerraformData,
     TerraformResource,
     TerraformStore,
     cleanup_terraform_resource_id,
     kgenlib,
 )
+from .servicedirectory import gen_service_directory_service
+
 
 class GoogleResource(TerraformResource):
     def body(self):
@@ -113,6 +118,122 @@ class GenGoogleOrgPolicyPolicy(TerraformStore):
         self.add(policy)
 
 
+@kgenlib.register_generator(path="isoflow.graphs")
+class GenGoogleComputeAddress(TerraformStore):
+    address: dict = {"type": "INTERNAL", "subnetwork": "default"}
+    dns: dict = {"type": "A", "ttl": "600"}
+
+    def body(self):
+        self.filename = "gen_google_compute_address.tf"
+        config = self.config
+        inputs = config["generate_isoflow_endpoint"]
+        if "url" not in inputs:
+            raise ValueError(
+                "string `url` expected as input to generate_isoflow_endpoint"
+            )
+        if "dns" not in inputs:
+            raise ValueError(
+                "object `dns` expected as input to generate_isoflow_endpoint"
+            )
+
+        dns_cfg = inputs["dns"]
+        url = inputs["url"].strip(".")
+        cluster_cfg = config["cluster_cfg"]
+        region = config["cluster_cfg"]["location"]
+
+        endpoint_id = f"{config.name}-{config.namespace}-{cluster_cfg.name}"
+
+        internal_cluster_named_ip = self.inventory.parameters.get(
+            "internal_cluster_named_ip"
+        )
+        gateway_address = TerraformData(
+            id="gateway",
+            type="google_compute_address",
+            defaults=self.defaults,
+            config=config,
+        )
+        gateway_address.add("name", internal_cluster_named_ip)
+        gateway_address.add("region", region)
+        self.add(gateway_address)
+
+        ## TODO(ademaria) remove this block after full gateway migration
+        address = GoogleResource(
+            id=endpoint_id,
+            type="google_compute_address",
+            defaults=self.defaults,
+            config=config,
+        )
+
+        address.resource.name = endpoint_id
+        address.resource.address_type = self.address["type"]
+        address.resource.subnetwork = self.address["subnetwork"]
+
+        address.resource.region = region
+
+        if self.config.get("load_balancer_ip", None):
+            self.add(address)
+
+        ## END
+
+        ip_address_gateway = gateway_address.get_reference(wrap=True, attr="address")
+
+        rule = GoogleResource(
+            id=endpoint_id,
+            type="google_dns_record_set",
+            defaults=self.defaults,
+            config=config,
+        )
+
+        rule.resource.name = f"{url}."
+        rule.resource.managed_zone = dns_cfg.zone_name
+        rule.resource.type = self.dns["type"]
+        rule.resource.ttl = self.dns["ttl"]
+        rule.resource.rrdatas = [ip_address_gateway]
+
+        if self.config.get("enable_anyflow_migration", False):
+            rule.resource.name = f"isoflow.{rule.resource.name}"
+
+        self.add_list([rule])
+
+        sd_namespace_id = config.cluster_cfg.name
+        sd_project_id = config.cluster_cfg.gcp_project_id
+        sd_location = config.cluster_cfg.location
+
+        self.add(
+            network := TerraformData(
+                id="project", type="google_project", defaults=self.defaults, config={}
+            )
+        )
+
+        network.add("project_id", sd_project_id)
+
+        self.add_list(
+            gen_service_directory_service(
+                dict(
+                    namespace_id=sd_namespace_id,
+                    service_id=self.name,
+                    project_id=sd_project_id,
+                    location=sd_location,
+                    host=config.get("generate_isoflow_endpoint")["url"],
+                    endpoints={
+                        "http": dict(
+                            endpoint_id="http",
+                            network="projects/${data.google_project.project.number}/locations/global/networks/default",
+                            address=ip_address_gateway,
+                            healthcheck_path="/",
+                            port=80,
+                            metadata=dict(
+                                environment=sd_namespace_id,
+                                location=sd_location,
+                            ),
+                        )
+                    },
+                ),
+                self.defaults,
+            )
+        )
+
+
 @kgenlib.register_generator(path="ingresses")
 class GenIngressResources(TerraformStore):
     def body(self):
@@ -162,7 +283,7 @@ class GenRedisInstance(TerraformStore):
         instance.resource.tier = config["tier"]
         instance.resource.memory_size_gb = config["memory_size_gb"]
         instance.resource.region = config["region"]
-        instance.resource.labels = config.get("labels", {})
+        instance.resource.labels = instance.config.get("labels", {})
 
         record = GoogleResource(
             id=resource_id,
@@ -484,7 +605,7 @@ class GenGoogleContainerCluster(TerraformStore):
             config=config,
         )
         cluster.resource.name = name
-        cluster.set(config)
+        cluster.set()
         cluster.filename = self.filename
         cluster.resource.setdefault("depends_on", []).append(
             "google_project_service.container"
@@ -504,6 +625,7 @@ class GenGoogleContainerCluster(TerraformStore):
                 config=pool_config,
                 defaults=self.defaults,
             )
+            pool.set()
             pool.resource.update(pool_config)
             pool.resource.cluster = cluster.get_reference(attr="id", wrap=True)
             pool.filename = self.filename
@@ -539,7 +661,6 @@ class GenGoogleContainerCluster(TerraformStore):
         configuration.resource.content = f'${{templatefile("cluster_inventory.tftpl", {{ cluster = {cluster.get_reference(wrap=False)} }})}}'
         configuration.resource.commit_message = "Managed by Kapitan"
         configuration.resource.commit_author = "Kapitan User"
-        configuration.resource.commit_email = "kapitan@kapicorp.com"
         configuration.resource.overwrite_on_create = True
 
         self.add(configuration)
@@ -563,16 +684,17 @@ class GoogleStorageBucketGenerator(TerraformStore):
             config=config,
             defaults=self.defaults,
         )
+        bucket_config = bucket.config
         bucket.add("name", resource_name)
         bucket.filename = self.filename
-        bucket.add("location", config.get("location", self.location))
-        bucket.add("versioning", config.get("versioning", {}))
-        bucket.add("lifecycle_rule", config.get("lifecycle_rule", []))
-        bucket.add("cors", config.get("cors", []))
-        bucket.add("labels", config.get("labels", {}))
+        bucket.add("location", bucket_config.get("location", self.location))
+        bucket.add("versioning", bucket_config.get("versioning", {}))
+        bucket.add("lifecycle_rule", bucket_config.get("lifecycle_rule", []))
+        bucket.add("cors", bucket_config.get("cors", []))
+        bucket.add("labels", bucket_config.get("labels", {}))
         bucket.add(
             "uniform_bucket_level_access",
-            config.get("uniform_bucket_level_access", True),
+            bucket_config.get("uniform_bucket_level_access", True),
         )
 
         self.add(bucket)
@@ -613,6 +735,8 @@ class GoogleArtifactRegistryGenerator(TerraformStore):
         self.filename = "gen_google_artifact_registry_repository.tf"
         resource_id = cleanup_terraform_resource_id(self.id)
         config = self.config
+        iam_members = config.pop("iam_members", [])
+
         config.setdefault("repository_id", self.name)
         repo = GoogleResource(
             type="google_artifact_registry_repository",
@@ -620,8 +744,9 @@ class GoogleArtifactRegistryGenerator(TerraformStore):
             config=config,
             defaults=self.defaults,
         )
-        iam_members = config.pop("iam_members", [])
-        repo.set(config)
+        repo.set()
+
+        config = Dict(repo.config)
 
         for member_cfg in iam_members:
             for role in member_cfg.get("roles", []):

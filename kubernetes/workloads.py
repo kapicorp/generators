@@ -3,8 +3,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-from kapitan.inputs.kadet import BaseModel, BaseObj, CompileError, Dict
 from typing import Any
+
+from kapitan.inputs.kadet import BaseModel, BaseObj, CompileError, Dict
+
 from .autoscaling import (
     HorizontalPodAutoscaler,
     KedaScaledObject,
@@ -18,6 +20,7 @@ from .common import (
     ContainerSpec,
     ContainerTCPProbeSpec,
     CronJobConfigSpec,
+    DaemonSetConfigSpec,
     DeploymentConfigSpec,
     JobConfigSpec,
     KubernetesResource,
@@ -49,10 +52,9 @@ class Workload(KubernetesResource):
         self.root.spec.template.metadata.labels.update(config.pod_labels)
 
         self.add_volumes(config.volumes)
-        self.add_volume_claims(config.volume_claims)
         self.root.spec.template.spec.securityContext = config.workload_security_context
         self.root.spec.minReadySeconds = config.min_ready_seconds
-        if config.service_account.enabled:
+        if config.service_account and config.service_account.enabled:
             self.root.spec.template.spec.serviceAccountName = (
                 config.service_account.name or name
             )
@@ -177,8 +179,7 @@ class Workload(KubernetesResource):
                     "defaultMode": object.config.default_mode,
                     name_key: rendered_name,
                     "items": [
-                        {"key": value, "path": value}
-                        for value in object.config.items
+                        {"key": value, "path": value} for value in object.config.items
                     ],
                 },
             }
@@ -232,13 +233,15 @@ class StatefulSet(Workload):
         self.root.spec.revisionHistoryLimit = config.revision_history_limit
         self.root.spec.strategy = config.strategy
         self.root.spec.updateStrategy = config.update_strategy or update_strategy
-        self.root.spec.serviceName = config.service.service_name or name
+        self.root.spec.serviceName = config.service.service_name if config.service else name
         self.set_replicas(config.replicas)
+        self.add_volume_claims(config.volume_claims)
 
 
 class DaemonSet(Workload):
     kind: str = "DaemonSet"
     api_version: str = "apps/v1"
+    config: DaemonSetConfigSpec
 
     def body(self):
         super().body()
@@ -353,12 +356,12 @@ class Container(ContainerSpec):
                     f"error with '{object_name}' for component {name}: configuration cannot be empty!"
                 )
 
-            if "mount" in spec:
+            if spec.mount:
                 self.root.setdefault("volumeMounts", [])
                 self.root.volumeMounts += [
                     {
                         "mountPath": spec.mount,
-                        "readOnly": spec.get("readOnly", None),
+                        "readOnly": spec.readOnly or None,
                         "name": object_name,
                         "subPath": spec.subPath,
                     }
@@ -425,9 +428,14 @@ class Container(ContainerSpec):
             )
 
         if config.healthcheck:
-            self.root.livenessProbe = self.create_probe(config.healthcheck.liveness)
-            self.root.readinessProbe = self.create_probe(config.healthcheck.readiness)
-            self.root.startupProbe = self.create_probe(config.healthcheck.startup)
+            if config.healthcheck.liveness:
+                self.root.livenessProbe = self.create_probe(config.healthcheck.liveness)
+            if config.healthcheck.readiness:
+                self.root.readinessProbe = self.create_probe(
+                    config.healthcheck.readiness
+                )
+            if config.healthcheck.startup:
+                self.root.startupProbe = self.create_probe(config.healthcheck.startup)
         self.process_envs(config)
 
 
@@ -466,16 +474,23 @@ class Components(kgenlib.BaseStore):
     config: WorkloadConfigSpec
 
     def _add_component(
-        self, component_class, config_attr=None, name=None, workload=None, spec=None
+        self,
+        component_class,
+        config_attr=None,
+        name=None,
+        workload=None,
+        spec=None,
+        **kwargs,
     ):
         if config_attr and getattr(self.config, config_attr):
             spec = spec or getattr(self.config, config_attr, {})
             name = name or self.name
             component = component_class(
-                name=name, config=self.config, spec=spec, workload=workload
+                name=name, config=self.config, spec=spec, workload=workload, **kwargs
             )
             self.add(component)
             logger.debug(f"Added component {component.root.metadata} for {self.name}.")
+            return component
 
     def _generate_and_add_multiple_objects(
         self, generating_class, config_attr, workload
@@ -523,7 +538,8 @@ class Components(kgenlib.BaseStore):
         elif config.type == WorkloadTypes.JOB:
             if config.schedule:
                 workload = CronJob(name=name, config=config.model_dump())
-            workload = Job(name=name, config=config.model_dump())
+            else:
+                workload = Job(name=name, config=config.model_dump())
         else:
             raise ValueError(f"Unknown workload type: {config.type}")
 
@@ -562,16 +578,19 @@ class Components(kgenlib.BaseStore):
         self._add_component(PrometheusRule, "prometheus_rules")
 
         if self.config.service_account.create:
-            sa_name = self.config.service_account.name or self.name
-            self._add_component(ServiceAccount, "service_account", name=sa_name)
+            sa = self._add_component(ServiceAccount, "service_account")
 
             if self.config.role:
-                self._add_component(Role)
-                self._add_component(RoleBinding, spec=sa_name)
+                role = self._add_component(Role, "role")
+                if role:
+                    self._add_component(RoleBinding, "role", sa=sa, role=role)
 
             if self.config.cluster_role:
-                self._add_component(ClusterRole)
-                self._add_component(ClusterRoleBinding, spec=sa_name)
+                role = self._add_component(ClusterRole, "cluster_role")
+                if role:
+                    self._add_component(
+                        ClusterRoleBinding, "cluster_role", role=role, sa=sa
+                    )
 
         self._add_component(BackendConfig, "backend_config")
 

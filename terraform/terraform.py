@@ -4,12 +4,12 @@ logger = logging.getLogger(__name__)
 
 from .common import (
     TerraformBlock,
+    TerraformBlockTypes,
     TerraformData,
     TerraformLocal,
     TerraformProvider,
     TerraformResource,
     TerraformStore,
-    TerraformBlockTypes,
     kgenlib,
 )
 
@@ -130,6 +130,6 @@ class TerraformGenericResource(TerraformStore):
                 config=resource_config,
                 defaults=self.defaults,
             )
-            resource.set(resource_config)
+            resource.set()
 
             self.add(resource)

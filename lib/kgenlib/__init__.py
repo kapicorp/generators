@@ -23,7 +23,7 @@ from kapitan.utils import prune_empty, render_jinja2_file
 
 logger = logging.getLogger(__name__)
 
-search_paths = args.get("search_paths") if type(args) is dict else args.search_paths
+search_paths = args.search_paths
 registered_generators = contextvars.ContextVar(
     "current registered_generators in thread", default={}
 )
