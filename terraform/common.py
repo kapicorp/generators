@@ -100,8 +100,7 @@ class TerraformBlock(kgenlib.BaseContent):
         self.add(value)
 
     def set(self, config=None):
-        if config is None:
-            config = self.config
+        config = config or self.config
         self.root[self.block_type][self.type].setdefault(self.id, config).update(config)
 
     def add(self, name, value):

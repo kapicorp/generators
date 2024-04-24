@@ -5,7 +5,7 @@ from enum import StrEnum, auto
 from typing import Any, Dict, List, Optional
 
 from kapitan.inputs.kadet import BaseObj, load_from_search_paths
-from pydantic import Field
+from pydantic import DirectoryPath, Field, FilePath
 
 kgenlib = load_from_search_paths("kgenlib")
 
@@ -22,11 +22,12 @@ class KubernetesResourceSpec(kgenlib.BaseModel):
     annotations: Optional[Dict[str, str]] = {}
     spec: Optional[dict] = None
 
+
 class KubernetesBaseResource(kgenlib.BaseContent):
     name: str
     api_version: str
     kind: str
-    config: KubernetesResourceSpec
+    config: KubernetesResourceSpec = KubernetesResourceSpec()
     rendered_name: str = None
 
     def new(self):
@@ -65,12 +66,12 @@ class KubernetesBaseResource(kgenlib.BaseContent):
     def body(self):
         self.root.apiVersion = self.api_version
         self.root.kind = self.kind
-        self.name = self.name
 
-        self.root.metadata.name = self.rendered_name
+        self.root.metadata.name = self.rendered_name or self.name
         self.add_label("name", self.name)
-        self.add_labels(self.config.labels)
-        self.add_annotations(self.config.annotations)
+        if self.config:
+            self.add_labels(self.config.labels)
+            self.add_annotations(self.config.annotations)
 
     def add_label(self, key: str, value: str):
         self.root.metadata.labels[key] = value
@@ -118,12 +119,12 @@ class KubernetesResource(KubernetesBaseResource):
     api_version: str
     kind: str
     namespace: Optional[str] = None
-    config: KubernetesResourceSpec
     rendered_name: str = None
 
     def new(self):
         super().new()
-        self.namespace = self.config.namespace or self.namespace
+        if self.config:
+            self.namespace = self.config.namespace or self.namespace
 
     def __eq__(self, other):
         return (
@@ -176,7 +177,6 @@ class ProbeTypes(StrEnum):
     HTTP = "HTTP"
     TCP = "TCP"
     EXEC = "EXEC"
-    
 
 
 class ContainerProbeSpec(kgenlib.BaseModel):
@@ -238,36 +238,57 @@ class ContainerPortSpec(kgenlib.BaseModel):
     service_port: Optional[int] = None
     protocol: Optional[PortProtocolSpec] = PortProtocolSpec.TCP
 
+
 class SecurityContextSpec(kgenlib.BaseModel):
     allow_privilege_escalation: Optional[bool] = None
 
 
+class TransformTypes(StrEnum):
+    NONE = auto()
+    JSON = auto()
+    YAML = auto()
+    AUTO = auto()
+
+
 class ConfigDataSpec(kgenlib.BaseModel):
     b64_encode: Optional[bool] = False
-    value: Optional[str] = None
-    value_as_str: Optional[Dict] = None
-    template: Optional[str] = None
+    transform: Optional[TransformTypes] = TransformTypes.NONE
+    value: Optional[str | dict] = None
+    template: Optional[FilePath] = None
     values: Optional[Dict] = {}
-    file: Optional[str] = None
+    file: Optional[FilePath] = None
+
 
 class SharedConfigSpec(KubernetesResourceSpec):
-    data: Optional[Dict[str, ConfigDataSpec]] = None
-    binary_data: Optional[Dict[str, ConfigDataSpec]] = None
+    data: Optional[Dict[str, ConfigDataSpec]] = {}
+    binary_data: Optional[Dict[str, ConfigDataSpec]] = {}
     mount: Optional[str] = None
     readOnly: Optional[bool] = False
-    sub_path: Optional[str] = None
+    subPath: Optional[str] = None
     items: Optional[list] = []
     default_mode: Optional[int] = 420
-    directory: Optional[str] = None
+    directory: Optional[DirectoryPath] = None
     versioned: Optional[bool] = False
+
 
 class ConfigMapSpec(SharedConfigSpec):
     pass
-    
+
+
 class SecretSpec(SharedConfigSpec):
     type: Optional[str] = "Opaque"
-    string_data: Optional[Dict[str, str]] = {}
- 
+    string_data: Optional[Dict[str, str | ConfigDataSpec]] = {}
+
+
+class ServiceAccountConfigSpec(KubernetesResourceSpec):
+    annotations: dict = {}
+    labels: dict = {}
+    namespace: Optional[str] = None
+    rendered_name: Optional[str] = None
+    name: Optional[str] = None
+    roles: Optional[List[Dict[str, Any]]] = None
+
+
 class ContainerSpec(kgenlib.BaseModel):
     args: list = []
     command: list = []
@@ -276,7 +297,7 @@ class ContainerSpec(kgenlib.BaseModel):
     env: dict = {}
     healthcheck: Optional[HealthCheckConfigSpec] = None
     image: str = None
-    image_pull_policy: Optional[ImagePullPolicy] = ImagePullPolicy.ALWAYS
+    image_pull_policy: Optional[ImagePullPolicy] = ImagePullPolicy.IF_NOT_PRESENT
     lifecycle: dict = {}
     pod_annotations: dict = {}
     pod_labels: dict = {}
@@ -299,37 +320,42 @@ class SessionAffinity(StrEnum):
     NONE = "None"
 
 
-class RoleBindingConfig(KubernetesResourceSpec):
-    roleRef: dict = {}
-    subject: Optional[List[Dict[str, str]]] = []
+class RoleBindingConfigSpec(KubernetesResourceSpec):
+    roleRef: Optional[Dict[str, Any]] = None
+    subject: Optional[List[Dict[str, Any]]] = None
 
 
 class ServiceConfigSpec(KubernetesResourceSpec):
     service_name: Optional[str] = None
-    type: Optional[ServiceTypes] = ServiceTypes.CLUSTER_IP
+    type: Optional[ServiceTypes] = None
     selectors: Optional[Dict[str, str]] = {}
-    publish_not_ready_address: Optional[bool] = False
+    publish_not_ready_address: Optional[bool] = None
     headless: Optional[bool] = False
     session_affinity: Optional[SessionAffinity] = SessionAffinity.NONE
     expose_ports: Optional[List[str]] = []
+
 
 class VPAConfigSpec(kgenlib.BaseModel):
     update_mode: str = "Auto"
     resource_policy: Dict[str, List[Dict]] = {}
 
+
 class ServiceMonitororConfigSpec(kgenlib.BaseModel):
     endpoints: list = []
 
+
 class PrometheusRuleConfigSpec(kgenlib.BaseModel):
     rules: list = []
-    
-    
-class NetworkPolicySpec(KubernetesResource):
+
+
+class NetworkPolicySpec(KubernetesResourceSpec):
     ingress: Optional[List[Dict[str, Any]]] = None
     egress: Optional[List[Dict[str, Any]]] = None
 
+
 class WorkloadConfigSpec(KubernetesResourceSpec, ContainerSpec):
     type: Optional[WorkloadTypes] = WorkloadTypes.DEPLOYMENT
+    schedule: Optional[str] = None
     additional_containers: Optional[Dict[str, ContainerSpec]] = {}
     additional_services: Optional[Dict[str, ServiceConfigSpec]] = {}
     annotations: dict = {}
@@ -372,8 +398,9 @@ class WorkloadConfigSpec(KubernetesResourceSpec, ContainerSpec):
     webhooks: list = []
     workload_security_context: dict = {}
 
+
 class DeploymentConfigSpec(WorkloadConfigSpec):
-    type: Optional[WorkloadTypes] = WorkloadTypes.DEPLOYMENT 
+    type: Optional[WorkloadTypes] = WorkloadTypes.DEPLOYMENT
     update_strategy: Optional[dict] = {}
     strategy: Optional[dict] = {}
 
@@ -382,6 +409,10 @@ class StatefulSetConfigSpec(WorkloadConfigSpec):
     type: WorkloadTypes = WorkloadTypes.STATEFULSET
     update_strategy: dict = {}
     strategy: dict = {}
+
+
+class DaemonSetConfigSpec(WorkloadConfigSpec):
+    type: WorkloadTypes = WorkloadTypes.DAEMONSET
 
 
 class JobConfigSpec(WorkloadConfigSpec):
@@ -395,7 +426,3 @@ class JobConfigSpec(WorkloadConfigSpec):
 class CronJobConfigSpec(JobConfigSpec):
     type: WorkloadTypes = WorkloadTypes.CRONJOB
     schedule: str
-
-
-
-

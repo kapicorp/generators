@@ -10,8 +10,8 @@ from kadet import BaseModel
 from .common import (
     KubernetesResource,
     KubernetesResourceSpec,
-    ServiceConfigSpec,
     NetworkPolicySpec,
+    ServiceConfigSpec,
     kgenlib,
 )
 
@@ -55,7 +55,6 @@ class GoogleManagedCertificate(KubernetesResource):
         super().body()
         config = self.config
         self.root.spec.domains = config.domains
-
 
 
 class NetworkPolicy(KubernetesResource):
@@ -226,7 +225,7 @@ class HTTPRouteSpec(KubernetesResourceSpec):
     gateway_namespace: Optional[str | None]
     hostnames: Optional[List[str]]
     rules: List[Dict[str, Any]] = []
-    services: Optional[Dict[str, Dict[str, Any]]]
+    services: Optional[Dict[str, Dict[str, Any]]] = {}
 
 
 class HTTPRoute(KubernetesResource):

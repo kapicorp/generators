@@ -27,7 +27,7 @@ class GenGitHubRepository(TerraformStore):
             config=config,
             defaults=self.defaults,
         )
-        repository.set(config)
+        repository.set()
         repository.filename = "github_repository.tf"
 
         self.add(repository)

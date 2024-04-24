@@ -2,13 +2,15 @@ import json
 import logging
 
 logger = logging.getLogger(__name__)
+from kapitan.inputs.kadet import Dict
+
 from .base import Namespace
 from .common import KubernetesResource, KubernetesResourceSpec, kgenlib
 
 
 class ArgoCDApplicationConfigSpec(KubernetesResourceSpec):
     project: str = "default"
-    destination: dict = {}
+    destination: Dict = None
     source: dict
     sync_policy: dict = None
     ignore_differences: dict = None
@@ -18,7 +20,7 @@ class ArgoCDApplication(KubernetesResource):
     source: dict = None
     kind: str = "Application"
     api_version: str = "argoproj.io/v1alpha1"
-    cluster: dict = {}
+    cluster: Dict = {}
     config: ArgoCDApplicationConfigSpec
 
     def body(self):
@@ -69,6 +71,39 @@ class GenArgoCDApplication(kgenlib.BaseStore):
                 )
                 self.add(argo_application)
 
+
+@kgenlib.register_generator(
+    path="isoflow.graphs",
+    global_generator=True,
+    activation_path="argocd.app_of_apps",
+)
+class GenArgoCDApplicationPerResource(kgenlib.BaseStore):
+    def body(self):
+        graph_config = self.config
+        argocd_application_config = graph_config.get("argocd_application_config", {})
+
+        # Applies generator defaults to the config of the argocd application
+        kgenlib.patch_config(
+            argocd_application_config,
+            self.inventory,
+            "parameters.generators.argocd.defaults.application",
+        )
+
+        graph_name = graph_config.get("name", self.name)
+        argocd_application_config.setdefault("source", {}).setdefault("directory", {})[
+            "include"
+        ] = f"{graph_name}.yml"
+        argocd_application_config["source"].pop("plugin", None)
+
+        namespace = argocd_application_config["destination"]["namespace"]
+        cluster = argocd_application_config["destination"]["name"]
+
+        graph_name = f"{graph_name}.{namespace}.{cluster}"
+
+        argo_application = ArgoCDApplication(
+            name=graph_name, config=argocd_application_config
+        )
+        self.add(argo_application)
 
 
 class ArgoCDProjectConfigSpec(KubernetesResourceSpec):

@@ -2,11 +2,17 @@ import base64
 import hashlib
 import logging
 import os
+from typing import Any, Optional
 
-import yaml
-from kapitan.inputs.kadet import Dict
-
-from .common import KubernetesResource, ConfigDataSpec, kgenlib, SharedConfigSpec, SecretSpec, ConfigMapSpec
+from .common import (
+    ConfigDataSpec,
+    ConfigMapSpec,
+    KubernetesResource,
+    SecretSpec,
+    SharedConfigSpec,
+    TransformTypes,
+    kgenlib,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -15,16 +21,12 @@ class SharedConfig(KubernetesResource):
     """Shared base class for both ConfigMap and Secret components."""
 
     config: SharedConfigSpec
+    workload: Optional[Any] = None
 
     @staticmethod
     def encode_string(unencoded_string):
         """Encode a string using base64."""
         return base64.b64encode(unencoded_string.encode("ascii")).decode("ascii")
-
-    def setup_metadata(self):
-        """Set up metadata like namespace, annotations, and labels."""
-        self.items = self.config.items
-        logger.debug(f"Set up metadata for {self.name}.")
 
     def add_directory(self, directory, encode=False, stringdata=False):
         """Add contents of files in a directory."""
@@ -52,15 +54,23 @@ class SharedConfig(KubernetesResource):
         logger.debug(f"Adding item from spec {spec} to {self.name}.")
         encode = spec.b64_encode
         value = None
-        
+        transform = spec.transform
         if spec.value:
             value = spec.value
-        elif spec.value_as_str:
-            value = yaml.dump(
-                spec.value_as_str.dump(),
-                default_flow_style=False,
-                width=1000,
-            )
+            if transform != TransformTypes.NONE:
+                logger.debug(f"Transforming {key} with {transform}.")
+                if (
+                    transform == TransformTypes.AUTO
+                    and key.endswith(".json")
+                    or transform == TransformTypes.JSON
+                ):
+                    value = kgenlib.render_json(value)
+                elif (
+                    transform == TransformTypes.AUTO
+                    and (key.endswith(".yaml") or key.endswith(".yml"))
+                    or transform == TransformTypes.YAML
+                ):
+                    value = kgenlib.render_yaml(value)
         elif spec.template:
             value = kgenlib.render_jinja(spec.template, spec.values)
         elif spec.file:
@@ -97,10 +107,7 @@ class SharedConfig(KubernetesResource):
         """Shared logic for building the body of both Secret and ConfigMap."""
         logger.debug(f"Building body for {self.name}.")
         super().body()
-        self.setup_metadata()
-
-        if getattr(self, "workload", None) and self.workload.root.metadata.name:
-            self.add_label("name", self.workload.root.metadata.name)
+        self.items = self.config.items
 
         for key, spec in self.config.data.items():
             self.add_from_spec(key, spec)
@@ -108,7 +115,9 @@ class SharedConfig(KubernetesResource):
         self.add_directory(self.config.directory)
         self.post_setup()
         self.versioning()
-        if getattr(self, "workload", None):
+
+        if self.workload:
+            self.add_label("name", self.workload.root.metadata.name)
             self.workload.add_volumes_for_object(self)
 
     def post_setup(self):
@@ -135,9 +144,8 @@ class ComponentSecret(SharedConfig):
         """Specific setups for the Secret."""
         self.root.type = self.config.type
         logger.debug(f"Setting Secret type for {self.name} as {self.root.type}.")
-        for spec in self.config.string_data:
-            self.add_from_spec(spec, stringdata=True)
-        self.add_directory(self.config.directory, encode=True)
+        for key, spec in self.config.string_data.items():
+            self.add_from_spec(key, spec, stringdata=True)
 
 
 @kgenlib.register_generator(
