@@ -549,7 +549,7 @@ class PodSecurityPolicy(KubernetesResource):
     path="components",
     apply_patches=[
         "generators.manifest.default_config",
-        "applications.{application}.component_defaults",
+        "applications.\"{application}\".component_defaults",
     ],
 )
 class Components(kgenlib.BaseStore):
