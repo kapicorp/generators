@@ -1,9 +1,12 @@
 import contextvars
 import functools
+import json
 import logging
 from enum import Enum
 from typing import List
 
+import jmespath
+import jmespath.lexer
 import yaml
 from box.exceptions import BoxValueError
 from kapitan.cached import args
@@ -16,11 +19,11 @@ from kapitan.inputs.kadet import (
     current_target,
     inventory_global,
 )
-from kapitan.utils import render_jinja2_file
+from kapitan.utils import prune_empty, render_jinja2_file
 
 logger = logging.getLogger(__name__)
 
-search_paths = args.get("search_paths")
+search_paths = args.get("search_paths") if type(args) is dict else args.search_paths
 registered_generators = contextvars.ContextVar(
     "current registered_generators in thread", default={}
 )
@@ -30,22 +33,25 @@ target = current_target.get()
 
 @functools.lru_cache
 def load_generators(name, path):
+    import os
     from importlib import import_module
     from inspect import isclass
     from pkgutil import iter_modules
-    import os
 
     # iterate through the modules in the current package
     package_dir = os.path.abspath(os.path.dirname(path))
     for _, module_name, _ in iter_modules([package_dir]):
-        # import the module and iterate through its attributes
-        module = import_module(f"{name}.{module_name}")
-        for attribute_name in dir(module):
-            attribute = getattr(module, attribute_name)
+        try:
+            # import the module and iterate through its attributes
+            module = import_module(f"{name}.{module_name}")
+            for attribute_name in dir(module):
+                attribute = getattr(module, attribute_name)
 
-            if isclass(attribute):
-                # Add the class to this package's variables
-                globals()[attribute_name] = attribute
+                if isclass(attribute):
+                    # Add the class to this package's variables
+                    globals()[attribute_name] = attribute
+        except Exception as e:
+            logger.error(f"Error loading {module_name}: {e}")
 
 
 class DeleteContent(Exception):
@@ -100,6 +106,18 @@ def render_jinja(filename, ctx):
     return render_jinja2_file(filename, ctx, search_paths=search_paths)
 
 
+def render_json(data):
+    if isinstance(data, str):
+        data = json.loads(data)
+    return json.dumps(data, indent=4)
+
+
+def render_yaml(data):
+    if isinstance(data, str):
+        data = yaml.safe_load(data)
+    return yaml.dump(data, default_flow_style=False, width=1000, sort_keys=True)
+
+
 def findpaths_by_property(obj: dict, property: str) -> dict:
     """
     Traverses the whole dictionary looking of objects containing a given property.
@@ -123,26 +141,12 @@ def findpaths_by_property(obj: dict, property: str) -> dict:
 
 def findpath(obj, path, default={}):
     value = default
-    if path:
-        path_parts = path.split(".")
-    else:
-        return value
-
     try:
-        value = getattr(obj, path_parts[0])
-    except KeyError as e:
-        if value is not None:
-            return value
-        logging.info(f"Key {e} not found in {obj}: ignoring")
-    except AttributeError as e:
-        if value is not None:
-            return value
-        logging.info(f"Attribute {e} not found in {obj}: ignoring")
+        value = jmespath.search(path, obj)
+    except jmespath.exceptions.EmptyExpressionError:
+        pass
 
-    if len(path_parts) == 1:
-        return value
-    else:
-        return findpath(value, ".".join(path_parts[1:]))
+    return value or default
 
 
 def register_generator(*args, **kwargs):
@@ -161,14 +165,21 @@ class ContentType(Enum):
     YAML = 1
     KUBERNETES_RESOURCE = 2
     TERRAFORM_BLOCK = 3
+    JSON = 4
 
 
 class BaseContent(BaseModel):
     content_type: ContentType = ContentType.YAML
-    filename: str = None
+    filename: str = "output"
+    prune: bool = True
 
     def body(self):
         pass
+
+    def dump(self):
+        if self.prune:
+            self.root = Dict(prune_empty(self.root))
+        return super().dump()
 
     @classmethod
     def from_baseobj(cls, baseobj: BaseObj):
@@ -207,12 +218,7 @@ class BaseContent(BaseModel):
 
     @staticmethod
     def findpath(obj, path):
-        path_parts = path.split(".")
-        value = getattr(obj, path_parts[0])
-        if len(path_parts) == 1:
-            return value
-        else:
-            return BaseContent.findpath(value, ".".join(path_parts[1:]))
+        return findpath(obj, path)
 
     def mutate(self, mutations: List):
         for action, conditions in mutations.items():
@@ -224,16 +230,21 @@ class BaseContent(BaseModel):
                 for condition in conditions:
                     if self.match(condition["conditions"]):
                         raise DeleteContent(f"Deleting {self} because of {condition}")
+            if action == "prune":
+                for condition in conditions:
+                    if self.match(condition["conditions"]):
+                        self.prune = condition.get("prune", True)
+                        if condition.get("break", True):
+                            break
             if action == "bundle":
                 for condition in conditions:
                     if self.match(condition["conditions"]):
-                        if self.filename is None:
-                            try:
-                                self.filename = condition["filename"].format(content=self)
-                            except (AttributeError, KeyError):
-                                pass
-                            if condition.get("break", True):
-                                break
+                        try:
+                            self.filename = condition["filename"].format(content=self)
+                        except (AttributeError, KeyError):
+                            pass
+                        if condition.get("break", True):
+                            break
 
     def match(self, match_conditions):
         for key, values in match_conditions.items():
@@ -321,9 +332,6 @@ class BaseStore(BaseModel):
                     output_format = output_filename
                 else:
                     output_format = getattr(content, "filename", "output")
-                    if output_format is None:
-                        output_format = "output"
-                    
                 filename = output_format.format(content=content)
                 file_content_list = self.root.get(filename, [])
                 if content in file_content_list:
