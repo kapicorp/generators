@@ -7,13 +7,12 @@ logger = logging.getLogger(__name__)
 from kapitan.inputs.kadet import Dict
 
 from .common import (
-    TerraformData,
     TerraformResource,
     TerraformStore,
     cleanup_terraform_resource_id,
     kgenlib,
+    tf_id,
 )
-from .servicedirectory import gen_service_directory_service
 
 
 class GoogleResource(TerraformResource):
@@ -87,11 +86,13 @@ class GenGoogleOrgPolicyPolicy(TerraformStore):
 
         organization_id = self.inventory.parameters.get("gcp_organization_id")
         parent = config.get("parent", f"organizations/{organization_id}")
+        spec = config.get("spec", {})
         policy.resource.pop(
             "project"
         )  # project is not supported for google_org_policy_policy
         policy.resource.name = f"{parent}/policies/{id}"
         policy.resource.parent = parent
+        policy.resource.spec = spec
 
         if config.get("reset", False):
             policy.resource.spec.reset = config.get("reset", False)
@@ -116,122 +117,6 @@ class GenGoogleOrgPolicyPolicy(TerraformStore):
 
         policy.filename = self.filename
         self.add(policy)
-
-
-@kgenlib.register_generator(path="isoflow.graphs")
-class GenGoogleComputeAddress(TerraformStore):
-    address: dict = {"type": "INTERNAL", "subnetwork": "default"}
-    dns: dict = {"type": "A", "ttl": "600"}
-
-    def body(self):
-        self.filename = "gen_google_compute_address.tf"
-        config = self.config
-        inputs = config["generate_isoflow_endpoint"]
-        if "url" not in inputs:
-            raise ValueError(
-                "string `url` expected as input to generate_isoflow_endpoint"
-            )
-        if "dns" not in inputs:
-            raise ValueError(
-                "object `dns` expected as input to generate_isoflow_endpoint"
-            )
-
-        dns_cfg = inputs["dns"]
-        url = inputs["url"].strip(".")
-        cluster_cfg = config["cluster_cfg"]
-        region = config["cluster_cfg"]["location"]
-
-        endpoint_id = f"{config.name}-{config.namespace}-{cluster_cfg.name}"
-
-        internal_cluster_named_ip = self.inventory.parameters.get(
-            "internal_cluster_named_ip"
-        )
-        gateway_address = TerraformData(
-            id="gateway",
-            type="google_compute_address",
-            defaults=self.defaults,
-            config=config,
-        )
-        gateway_address.add("name", internal_cluster_named_ip)
-        gateway_address.add("region", region)
-        self.add(gateway_address)
-
-        ## TODO(ademaria) remove this block after full gateway migration
-        address = GoogleResource(
-            id=endpoint_id,
-            type="google_compute_address",
-            defaults=self.defaults,
-            config=config,
-        )
-
-        address.resource.name = endpoint_id
-        address.resource.address_type = self.address["type"]
-        address.resource.subnetwork = self.address["subnetwork"]
-
-        address.resource.region = region
-
-        if self.config.get("load_balancer_ip", None):
-            self.add(address)
-
-        ## END
-
-        ip_address_gateway = gateway_address.get_reference(wrap=True, attr="address")
-
-        rule = GoogleResource(
-            id=endpoint_id,
-            type="google_dns_record_set",
-            defaults=self.defaults,
-            config=config,
-        )
-
-        rule.resource.name = f"{url}."
-        rule.resource.managed_zone = dns_cfg.zone_name
-        rule.resource.type = self.dns["type"]
-        rule.resource.ttl = self.dns["ttl"]
-        rule.resource.rrdatas = [ip_address_gateway]
-
-        if self.config.get("enable_anyflow_migration", False):
-            rule.resource.name = f"isoflow.{rule.resource.name}"
-
-        self.add_list([rule])
-
-        sd_namespace_id = config.cluster_cfg.name
-        sd_project_id = config.cluster_cfg.gcp_project_id
-        sd_location = config.cluster_cfg.location
-
-        self.add(
-            network := TerraformData(
-                id="project", type="google_project", defaults=self.defaults, config={}
-            )
-        )
-
-        network.add("project_id", sd_project_id)
-
-        self.add_list(
-            gen_service_directory_service(
-                dict(
-                    namespace_id=sd_namespace_id,
-                    service_id=self.name,
-                    project_id=sd_project_id,
-                    location=sd_location,
-                    host=config.get("generate_isoflow_endpoint")["url"],
-                    endpoints={
-                        "http": dict(
-                            endpoint_id="http",
-                            network="projects/${data.google_project.project.number}/locations/global/networks/default",
-                            address=ip_address_gateway,
-                            healthcheck_path="/",
-                            port=80,
-                            metadata=dict(
-                                environment=sd_namespace_id,
-                                location=sd_location,
-                            ),
-                        )
-                    },
-                ),
-                self.defaults,
-            )
-        )
 
 
 @kgenlib.register_generator(path="ingresses")
@@ -284,7 +169,11 @@ class GenRedisInstance(TerraformStore):
         instance.resource.memory_size_gb = config["memory_size_gb"]
         instance.resource.region = config["region"]
         instance.resource.labels = instance.config.get("labels", {})
-
+        instance.resource.auth_enabled = config.get("auth_enabled", False)
+        instance.resource.redis_configs = config.get("redis_configs", {})
+        instance.resource.authorized_network = config.get(
+            "authorized_network", "default"
+        )
         record = GoogleResource(
             id=resource_id,
             type="google_dns_record_set",
@@ -349,6 +238,34 @@ class GenGoogleComputeAddress(TerraformStore):
         self.add(ip_address)
 
 
+@kgenlib.register_generator(path="terraform.gen_google_service_account_iam_members")
+class GenSAIAMMembers(TerraformStore):
+    def body(self):
+        self.filename = "gen_google_service_account_iam_members.tf"
+
+        config = self.config
+
+        members = config.get("members") or []
+        roles = config.get("roles" or [])
+        service_account_id = config.service_account_id
+
+        for member in members:
+            for role in roles:
+                iam_member = GoogleResource(
+                    id=tf_id(self.id, role, member),
+                    type="google_service_account_iam_member",
+                    config=config,
+                    defaults=self.defaults,
+                )
+                iam_member.filename = self.filename
+                iam_member.resource.service_account_id = service_account_id
+                iam_member.resource.role = role
+                iam_member.resource.member = member
+                iam_member.resource.pop("project", None)
+
+                self.add(iam_member)
+
+
 @kgenlib.register_generator(path="terraform.gen_google_service_account")
 class GenGoogleServiceAccount(TerraformStore):
     def body(self):
@@ -371,32 +288,36 @@ class GenGoogleServiceAccount(TerraformStore):
 
         self.add(sa)
 
-        if config.get("bindings", {}):
-            for binding_role, binding_config in config.bindings.items():
-                binding_id = binding_role.split("/")[1].replace(".", "_")
-                sa_binding = GoogleResource(
-                    id=f"{resource_id}_{binding_id}",
-                    type="google_service_account_iam_binding",
-                    config=config,
-                    defaults=self.defaults,
-                )
-                sa_binding.resource.service_account_id = sa.get_reference(
-                    attr="name", wrap=True
-                )
-                sa_binding.resource.role = binding_role
-                sa_binding.resource.members = binding_config.members
-                sa_binding.filename = self.filename
-                sa_binding.resource.depends_on = [sa.get_reference(wrap=False)]
-                sa_binding.resource.pop(
-                    "project"
-                )  # `project` is not supported for `service_account_iam_binding`
+        def add_store(store: TerraformStore):
+            for resource in store.get_content_list():
+                resource.filename = self.filename
+                self.add(resource)
 
-                self.add(sa_binding)
+        binding = GenGoogleSABinding()(
+            id=self.id,
+            name=resource_name,
+            defaults=self.defaults,
+            config=Dict(
+                service_account_ids=[sa.get_reference(attr="name")],
+                bindings={
+                    n: dict(
+                        binding,
+                        depends_on=[
+                            *(binding.get("depends_on") or []),
+                            sa.get_reference(wrap=False),
+                        ],
+                    )
+                    for n, binding in (config.get("bindings") or {}).items()
+                },
+            ),
+        )
+        add_store(binding)
 
-        for iam_member_config in config.get("service_account_iam", []):
+        # TODO: migrate more
+        for iam_member_config in config.get("service_account_iam") or []:
             member = iam_member_config.member
             sa_name = cleanup_terraform_resource_id(member.split("/")[-1])
-            service_account_id = sa.get_reference(attr="name", wrap=True)
+            service_account_id = member
 
             role = iam_member_config.role
             iam_id = role.split("/")[1].replace(".", "_")
@@ -419,7 +340,7 @@ class GenGoogleServiceAccount(TerraformStore):
 
             self.add(iam_member)
 
-        for iam_member_config in config.get("service_account_iam_for_self", []):
+        for iam_member_config in config.get("service_account_iam_for_self") or []:
             member = sa.get_reference(attr="member", wrap=True)
             service_account_id = iam_member_config.service_account_id
             sa_name = "self_" + cleanup_terraform_resource_id(
@@ -447,7 +368,7 @@ class GenGoogleServiceAccount(TerraformStore):
 
             self.add(iam_member)
 
-        if config.get("roles", {}):
+        if config.get("roles") or {}:
             for role_item in config.roles:
                 role_id = role_item.split("/")[1].replace(".", "_")
                 role_name = f"{resource_name}_{role_id}"
@@ -465,8 +386,88 @@ class GenGoogleServiceAccount(TerraformStore):
                 sa_role.resource.depends_on = [sa.get_reference(wrap=False)]
                 self.add(sa_role)
 
-        if config.get("bucket_iam"):
+        bigtable_presets = {"read": ["roles/bigtable.reader"]}
+        if bigtable_iam := config.get("bigtable_iam") or {}:
+            for table_name, table_iam_config in bigtable_iam.items():
+                role_preset = table_name
+                if table_name in bigtable_presets:
+                    role_preset = table_name
+                    roles = bigtable_presets.get(role_preset)
+                    for table_name in sorted(table_iam_config):
+                        for role in sorted(roles):
+                            dirty_table_iam_name = (
+                                f"{resource_name}_{table_name}_{role}"
+                            )
+                            table_iam_name = cleanup_terraform_resource_id(
+                                dirty_table_iam_name
+                            )
+                            table_role = GoogleResource(
+                                id=table_iam_name,
+                                type="google_bigtable_instance_iam_member",
+                                config=config,
+                                defaults=self.defaults,
+                            )
+
+                            if ":" in table_name:
+                                table_project, table_instance = table_name.split(":")
+                            else:
+                                table_project = None
+                                table_instance = table_name
+
+                            if table_project:
+                                table_role.resource.project = table_project
+                            table_role.resource.instance = table_instance
+                            table_role.resource.role = role
+                            table_role.resource.member = f"serviceAccount:{sa.get_reference(attr='email', wrap=True)}"
+                            table_role.filename = self.filename
+                            table_role.resource.depends_on = [
+                                sa.get_reference(wrap=False)
+                            ]
+                            self.add(table_role)
+                    continue
+
+                raise NotImplementedError(
+                    "custom IAM not implemented! please implement!"
+                )
+
+        if config.get("bucket_iam") or {}:
             for config_bucket_name, bucket_config in config.bucket_iam.items():
+                if config_bucket_name in {"read", "readwrite", "admin"}:
+                    role_preset = config_bucket_name
+                    role = {
+                        "read": "roles/storage.objectViewer",
+                        "readwrite": "roles/storage.objectCreator",
+                        # the difference between objectAdmin and objectUser
+                        # is that objectAdmin can additionally manage object ACL.
+                        # we don't want to enable it programatically, and so
+                        # `admin` permissions on a bucket will have all the admin
+                        # capabilities minus IAM.
+                        "admin": "roles/storage.objectUser",
+                    }[role_preset]
+
+                    for bucket_name in bucket_config:
+                        dirty_bucket_iam_name = (
+                            f"{resource_name}_{bucket_name}_{role_preset}"
+                        )
+                        bucket_iam_name = cleanup_terraform_resource_id(
+                            dirty_bucket_iam_name
+                        )
+                        bucket_role = GoogleResource(
+                            id=bucket_iam_name,
+                            type="google_storage_bucket_iam_member",
+                            config=config,
+                            defaults=self.defaults,
+                        )
+
+                        bucket_role.resource.bucket = bucket_name
+                        bucket_role.resource.role = role
+                        bucket_role.resource.pop("project")
+                        bucket_role.resource.member = f"serviceAccount:{sa.get_reference(attr='email', wrap=True)}"
+                        bucket_role.filename = self.filename
+                        bucket_role.resource.depends_on = [sa.get_reference(wrap=False)]
+                        self.add(bucket_role)
+                    continue
+
                 bucket_name = bucket_config.get("name", config_bucket_name)
                 bucket_iam_name = f"{resource_name}_{bucket_name}"
 
@@ -489,7 +490,7 @@ class GenGoogleServiceAccount(TerraformStore):
                     bucket_role.resource.depends_on = [sa.get_reference(wrap=False)]
                     self.add(bucket_role)
 
-        if config.get("pubsub_topic_iam"):
+        if config.get("pubsub_topic_iam") or {}:
             for topic_name, topic_config in config.pubsub_topic_iam.items():
                 if "topic" in topic_config:
                     topic_name = topic_config.topic
@@ -515,7 +516,7 @@ class GenGoogleServiceAccount(TerraformStore):
                     topic_role.filename = self.filename
                     self.add(topic_role)
 
-        if config.get("pubsub_subscription_iam"):
+        if config.get("pubsub_subscription_iam") or {}:
             for (
                 subscription_name,
                 subscription_config,
@@ -546,7 +547,7 @@ class GenGoogleServiceAccount(TerraformStore):
                     subscription_role.filename = self.filename
                     self.add(subscription_role)
 
-        if config.get("project_iam"):
+        if config.get("project_iam") or {}:
             for project_name, iam_config in config.project_iam.items():
                 if "project" in iam_config:
                     project_name = iam_config.project
@@ -570,7 +571,10 @@ class GenGoogleServiceAccount(TerraformStore):
                     iam_member.filename = self.filename
                     self.add(iam_member)
 
-        for repo_id, roles in config.get("artifact_registry_iam", {}).items():
+        artifact_registry_iam = config.get("artifact_registry_iam") or {}
+        for repo_id, config in artifact_registry_iam.items():
+            repo_id = config.get("repo_id") or repo_id
+            roles = config.get("roles") or []
             for role in roles:
                 repo_iam_member_cfg = {
                     "repo_id": repo_id,
@@ -583,6 +587,41 @@ class GenGoogleServiceAccount(TerraformStore):
                 )
                 repo_iam_member.resource.depends_on = [sa.get_reference(wrap=False)]
                 self.add(repo_iam_member)
+
+
+@kgenlib.register_generator(path="terraform.gen_google_service_account_iam_binding")
+class GenGoogleSABinding(TerraformStore):
+    def body(self) -> None:
+        resource_id = self.id
+        config = self.config
+        service_account_ids = config.service_account_ids
+        bindings = config.get("bindings") or {}
+
+        for service_account_id in service_account_ids:
+            for binding_role, binding_config in bindings.items():
+                roles = binding_config.get("roles") or [binding_role]
+                depends_on = binding_config.get("depends_on") or []
+                for role in roles:
+                    sa_binding = GoogleResource(
+                        id=tf_id(
+                            resource_id,
+                            role.replace(".", "_"),
+                            service_account_id.replace(".", "_")
+                            if len(service_account_ids) > 1
+                            else "",
+                        ),
+                        type="google_service_account_iam_binding",
+                        config=config,
+                        defaults=self.defaults,
+                    )
+                    sa_binding.resource.service_account_id = service_account_id
+                    sa_binding.resource.role = role
+                    sa_binding.resource.members = binding_config.members
+                    sa_binding.resource.depends_on = depends_on
+                    sa_binding.filename = self.filename
+                    # `project` is not supported for `service_account_iam_binding`
+                    sa_binding.resource.pop("project")
+                    self.add(sa_binding)
 
 
 @kgenlib.register_generator(
@@ -610,7 +649,6 @@ class GenGoogleContainerCluster(TerraformStore):
         cluster.resource.setdefault("depends_on", []).append(
             "google_project_service.container"
         )
-
         self.add(cluster)
 
         for pool_name, pool_config in pools.items():
@@ -701,6 +739,8 @@ class GoogleStorageBucketGenerator(TerraformStore):
 
         if config.get("bindings", {}):
             for binding_role, binding_config in config.bindings.items():
+                if "role" in binding_config:
+                    binding_role = binding_config.pop("role")
                 for member in binding_config.members:
                     binding_id = binding_role.split("/")[1].replace(".", "_")
                     binding_id = f"{resource_id}_{binding_id}_{member}"

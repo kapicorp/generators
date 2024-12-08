@@ -7,6 +7,7 @@ from .common import (
     TerraformBlockTypes,
     TerraformData,
     TerraformLocal,
+    TerraformModule,
     TerraformProvider,
     TerraformResource,
     TerraformStore,
@@ -59,8 +60,6 @@ class Provider(TerraformStore):
 @kgenlib.register_generator(path="terraform.gen_locals")
 class Local(TerraformStore):
     def body(self):
-        import base64
-
         id = self.id
         config = self.config
         logger.debug(f"Adding local {id} with config {config}")
@@ -115,6 +114,15 @@ class TerraformDataSource(TerraformStore):
             data_block.set(data_source_config)
 
             self.add(data_block)
+
+
+@kgenlib.register_generator(path="terraform.module")
+class Module(TerraformStore):
+    def body(self):
+        module = TerraformModule(id=self.name, config=self.config)
+        self.add(module)
+
+        self.filename = "modules.tf"
 
 
 @kgenlib.register_generator(path="terraform.resources.generic")

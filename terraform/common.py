@@ -4,12 +4,17 @@ import string
 from enum import StrEnum, auto
 
 from kapitan.inputs.kadet import Dict, load_from_search_paths
+from kapitan.utils import prune_empty
 from pydantic import field_validator
 
 kgenlib = load_from_search_paths("kgenlib")
 logger = logging.getLogger(__name__)
 
 TERRAFORM_DISALLOWED_CHARS_REGEX = r"[^a-zA-Z\.\-\_\@]"
+
+
+def tf_id(*id_chunks: str) -> str:
+    return "_".join(cleanup_terraform_resource_id(i) for i in id_chunks if i.strip())
 
 
 def cleanup_terraform_resource_id(resource_id: str) -> str:
@@ -36,6 +41,15 @@ class TerraformBlockTypes(StrEnum):
     RESOURCE = auto()
     TERRAFORM = auto()
     VARIABLE = auto()
+    MODULE = auto()
+
+
+def sortedDeep(d):
+    if isinstance(d, list):
+        return [sortedDeep(v) for v in d]
+    if isinstance(d, (dict, Dict)):
+        return {k: sortedDeep(d[k]) for k in sorted(d)}
+    return d
 
 
 class TerraformStore(kgenlib.BaseStore):
@@ -50,10 +64,13 @@ class TerraformStore(kgenlib.BaseStore):
                 output_format = getattr(content, "filename", "output.tf.json")
 
             filename = output_format.format(content=content)
+            if content.prune:
+                content.root = Dict(prune_empty(content.root))
             self.root.setdefault(filename, Dict()).merge_update(
                 content.root, box_merge_lists="extend"
             )
 
+        self.root = Dict(sortedDeep(self.root))
         return super().dump(already_processed=True)
 
 
@@ -69,7 +86,7 @@ class TerraformBlock(kgenlib.BaseContent):
     def name_must_valid_terraform_id(cls, v):
         allowed = set(string.ascii_letters + string.digits + "_-")
         if not set(v) <= allowed:
-            raise ValueError(f"Invalid character in terraform id: {v}")
+            v = cleanup_terraform_resource_id(v)
         return v
 
     def new(self):
@@ -152,12 +169,14 @@ class TerraformBlock(kgenlib.BaseContent):
 
 class TerraformResource(TerraformBlock):
     block_type: TerraformBlockTypes = TerraformBlockTypes.RESOURCE
+    prune: bool = True
 
     def body(self):
         # We pop/purge them because these are internal kapitan instructions
         self.moved_from(self.config.pop("moved_from", None))
         self.import_from(self.config.pop("import_from", None))
-
+        kapitan_metadata = self.config.pop("_kapitan_", {})
+        self.prune = kapitan_metadata.get("prune", self.prune)
         super().body()
 
     def import_from(self, import_id: str = None):
@@ -187,6 +206,15 @@ class TerraformLocal(TerraformBlock):
             value = config.get("value", None)
             if value:
                 self.set_local(name, value)
+
+
+class TerraformModule(TerraformBlock):
+    block_type: TerraformBlockTypes = TerraformBlockTypes.MODULE
+
+    def body(self):
+        config = self.config
+        id = config.get("id", self.id)
+        self.root.module.setdefault(id, config)
 
 
 class TerraformData(TerraformBlock):
