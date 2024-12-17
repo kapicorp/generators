@@ -4,6 +4,8 @@ import logging
 import os
 from typing import Any, Optional
 
+from kapitan.resources import inventory
+
 from .common import (
     ConfigDataSpec,
     ConfigMapSpec,
@@ -28,19 +30,26 @@ class SharedConfig(KubernetesResource):
         """Encode a string using base64."""
         return base64.b64encode(unencoded_string.encode("ascii")).decode("ascii")
 
-    def add_directory(self, directory, encode=False, stringdata=False):
+    def add_directory(self, directory, encode=False, stringdata=False, basedir=None):
         """Add contents of files in a directory."""
+        if basedir is None:
+            basedir = directory
+
         if directory and os.path.isdir(directory):
             logger.debug(f"Adding files from directory {directory} to {self.name}.")
             for filename in os.listdir(directory):
-                with open(f"{directory}/{filename}", "r") as f:
-                    file_content = f.read()
-                    self.add_item(
-                        filename,
-                        file_content,
-                        request_encode=encode,
-                        stringdata=stringdata,
-                    )
+                path = os.path.join(directory, filename)
+                if os.path.isfile(path):
+                    with open(path, "r") as f:
+                        file_content = f.read()
+                        self.add_item(
+                            os.path.relpath(path, basedir).replace(os.sep, "_"),
+                            file_content,
+                            request_encode=encode,
+                            stringdata=stringdata,
+                        )
+                else:
+                    self.add_directory(path, encode, stringdata, basedir=basedir)
 
     def add_item(self, key, value, request_encode=False, stringdata=False):
         """Add a single item to the resource."""
@@ -72,7 +81,10 @@ class SharedConfig(KubernetesResource):
                 ):
                     value = kgenlib.render_yaml(value)
         elif spec.template:
-            value = kgenlib.render_jinja(spec.template, spec.values)
+            context = spec.values.copy()
+            context["inventory"] = inventory(None)
+            context["inventory_global"] = inventory(None, None)
+            value = kgenlib.render_jinja(spec.template, context)
         elif spec.file:
             with open(spec.file, "r") as f:
                 value = f.read()

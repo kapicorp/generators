@@ -1,11 +1,6 @@
 import logging
 
-logger = logging.getLogger(__name__)
-
-
-from typing import Any
-
-from kapitan.inputs.kadet import BaseModel, BaseObj, CompileError, Dict
+from kapitan.inputs.kadet import BaseModel, CompileError
 
 from .autoscaling import (
     HorizontalPodAutoscaler,
@@ -15,16 +10,15 @@ from .autoscaling import (
 )
 from .base import MutatingWebhookConfiguration
 from .common import (
-    ContainerEXECProbeSpec,
-    ContainerHTTPProbeSpec,
+    CloudRunServiceConfigSpec,
+    ContainerProbes,
     ContainerSpec,
-    ContainerTCPProbeSpec,
     CronJobConfigSpec,
     DaemonSetConfigSpec,
     DeploymentConfigSpec,
+    InitContainerSpec,
     JobConfigSpec,
     KubernetesResource,
-    ProbeTypes,
     StatefulSetConfigSpec,
     WorkloadConfigSpec,
     WorkloadTypes,
@@ -32,10 +26,48 @@ from .common import (
 )
 from .gke import BackendConfig
 from .istio import IstioPolicy
-from .networking import HealthCheckPolicy, NetworkPolicy, Service
+from .networking import NetworkPolicy, Service
 from .prometheus import PrometheusRule, ServiceMonitor
 from .rbac import ClusterRole, ClusterRoleBinding, Role, RoleBinding, ServiceAccount
 from .storage import ComponentConfig, ComponentSecret
+
+logger = logging.getLogger(__name__)
+
+
+class CloudRunResource(KubernetesResource):
+    def body(self):
+        super().body()
+        name = self.name
+        config = self.config
+
+        self.root.spec.template.metadata.annotations.update(config.pod_annotations)
+        self.root.spec.template.metadata.labels.update(config.pod_labels)
+
+        if config.service_account.enabled:
+            self.root.spec.template.spec.serviceAccountName = (
+                config.service_account.name or name
+            )
+
+        container = Container(name=name, config=config)
+        additional_containers = [
+            Container(name=name, config=_config)
+            for name, _config in config.additional_containers.items()
+            if _config is not None
+        ]
+        self.add_containers([container])
+        self.add_containers(additional_containers)
+        self.root.spec.template.spec.imagePullSecrets = config.image_pull_secrets
+        self.add_volumes(config.volumes)
+
+    def add_volumes(self, volumes):
+        for key, value in volumes.items():
+            kgenlib.merge({"name": key}, value)
+            self.root.spec.template.spec.setdefault("volumes", []).append(value)
+
+    def add_containers(self, containers):
+        self.root.spec.template.spec.setdefault("containers", []).extend(
+            [container.root for container in containers]
+        )
 
 
 class Workload(KubernetesResource):
@@ -46,35 +78,36 @@ class Workload(KubernetesResource):
         self.root.spec.template.spec.hostNetwork = config.host_network
         self.root.spec.template.spec.hostPID = config.host_pid
 
-        self.root.spec.template.metadata.annotations.update(
-            config.pod_annotations or {}
-        )
+        self.root.spec.template.metadata.annotations.update(config.pod_annotations)
         self.root.spec.template.metadata.labels.update(config.pod_labels)
 
         self.add_volumes(config.volumes)
         self.root.spec.template.spec.securityContext = config.workload_security_context
         self.root.spec.minReadySeconds = config.min_ready_seconds
-        if config.service_account and config.service_account.enabled:
+        if config.service_account.enabled:
             self.root.spec.template.spec.serviceAccountName = (
                 config.service_account.name or name
             )
 
         container = Container(name=name, config=config)
         additional_containers = [
-            Container(name=name, config=config)
-            for name, config in config.additional_containers.items()
+            Container(name=name, config=_config)
+            for name, _config in config.additional_containers.items()
+            if _config is not None
         ]
         self.add_containers([container])
         self.add_containers(additional_containers)
         init_containers = [
-            Container(name=name, config=config)
-            for name, config in config.init_containers.items()
+            InitContainer(name=name, config=_config)
+            for name, _config in config.init_containers.items()
+            if _config is not None
         ]
 
-        self.root.spec.template.spec.restartPolicy = config.restart_policy
         self.add_init_containers(init_containers)
         self.root.spec.template.spec.imagePullSecrets = config.image_pull_secrets
         self.root.spec.template.spec.dnsPolicy = config.dns_policy
+
+        self.root.spec.template.spec.restartPolicy = config.restart_policy
         self.root.spec.template.spec.terminationGracePeriodSeconds = config.grace_period
 
         self.root.spec.template.spec.nodeSelector = config.node_selector
@@ -186,6 +219,15 @@ class Workload(KubernetesResource):
         )
 
 
+class CloudRunService(CloudRunResource):
+    kind: str = "Service"
+    api_version: str = "serving.knative.dev/v1"
+    config: CloudRunServiceConfigSpec
+
+    def body(self):
+        super().body()
+
+
 class Deployment(Workload):
     kind: str = "Deployment"
     api_version: str = "apps/v1"
@@ -231,9 +273,10 @@ class StatefulSet(Workload):
         )
 
         self.root.spec.revisionHistoryLimit = config.revision_history_limit
-        self.root.spec.strategy = config.strategy
+        self.root.spec.podManagementPolicy = config.pod_management_policy
         self.root.spec.updateStrategy = config.update_strategy or update_strategy
-        self.root.spec.serviceName = config.service.service_name if config.service else name
+        if config.service:
+            self.root.spec.serviceName = config.service.service_name or name
         self.set_replicas(config.replicas)
         self.add_volume_claims(config.volume_claims)
 
@@ -285,10 +328,13 @@ class CronJob(Workload):
         job = Job(name=self.name, config=config)
         self.root.spec.jobTemplate.spec = job.root.spec
         self.root.spec.schedule = config.schedule
+        self.root.spec.concurrencyPolicy = config.concurrency_policy
         self.root.spec.template = None
 
 
-class Container(ContainerSpec):
+class Container(BaseModel):
+    config: ContainerSpec
+
     @staticmethod
     def find_key_in_config(key, configs):
         for name, config in configs.items():
@@ -372,29 +418,6 @@ class Container(ContainerSpec):
             kgenlib.merge({"name": key}, value)
             self.root.setdefault("volumeMounts", []).append(value)
 
-    def create_probe(
-        self,
-        spec: ContainerEXECProbeSpec | ContainerHTTPProbeSpec | ContainerTCPProbeSpec,
-    ):
-        probe = BaseObj()
-        if spec and spec.enabled:
-            probe.root.initialDelaySeconds = spec.initial_delay_seconds
-            probe.root.periodSeconds = spec.period_seconds
-            probe.root.timeoutSeconds = spec.timeout_seconds
-            probe.root.successThreshold = spec.success_threshold
-            probe.root.failureThreshold = spec.failure_threshold
-
-            if spec.type == ProbeTypes.HTTP:
-                probe.root.httpGet.scheme = spec.scheme
-                probe.root.httpGet.port = spec.port
-                probe.root.httpGet.path = spec.path
-                probe.root.httpGet.httpHeaders = spec.httpHeaders
-            elif spec.type == ProbeTypes.TCP:
-                probe.root.tcpSocket.port = spec.port
-            elif spec.type == ProbeTypes.EXEC:
-                probe.root.exec.command = spec.command
-        return probe.root
-
     def body(self):
         name = self.name
         config = self.config
@@ -402,7 +425,8 @@ class Container(ContainerSpec):
         self.root.name = name
         self.root.image = config.image
         self.root.imagePullPolicy = config.image_pull_policy
-        self.root.lifecycle = config.lifecycle
+        if config.lifecycle:
+            self.root.lifecycle = config.lifecycle
         self.root.resources = config.resources
         self.root.args = config.args
         self.root.command = config.command
@@ -428,15 +452,27 @@ class Container(ContainerSpec):
             )
 
         if config.healthcheck:
-            if config.healthcheck.liveness:
-                self.root.livenessProbe = self.create_probe(config.healthcheck.liveness)
-            if config.healthcheck.readiness:
-                self.root.readinessProbe = self.create_probe(
-                    config.healthcheck.readiness
-                )
-            if config.healthcheck.startup:
-                self.root.startupProbe = self.create_probe(config.healthcheck.startup)
+            self.root.livenessProbe = ContainerProbes.from_spec(
+                config.healthcheck.liveness
+            )
+            self.root.readinessProbe = ContainerProbes.from_spec(
+                config.healthcheck.readiness
+            )
+            self.root.startupProbe = ContainerProbes.from_spec(
+                config.healthcheck.startup
+            )
+
         self.process_envs(config)
+
+
+class InitContainer(Container):
+    config: InitContainerSpec
+
+    def body(self):
+        config = self.config
+        super().body()
+        if config.sidecar:
+            self.root.restartPolicy = "Always"
 
 
 class PodSecurityPolicy(KubernetesResource):
@@ -528,6 +564,7 @@ class Components(kgenlib.BaseStore):
         name = self.name
         config = self.config
         logger.debug(f"Generating components for {name} from {config}")
+        namespace = config.namespace
 
         if config.type == WorkloadTypes.DEPLOYMENT:
             workload = Deployment(name=name, config=config.model_dump())
@@ -540,6 +577,8 @@ class Components(kgenlib.BaseStore):
                 workload = CronJob(name=name, config=config.model_dump())
             else:
                 workload = Job(name=name, config=config.model_dump())
+        elif config.type == WorkloadTypes.CLOUD_RUN_SERVICE:
+            workload = CloudRunService(name=name, config=config.model_dump())
         else:
             raise ValueError(f"Unknown workload type: {config.type}")
 
@@ -603,7 +642,13 @@ class Components(kgenlib.BaseStore):
         self.add(workload)
 
         # Patch Application
-        self.apply_patch(
-            {"metadata": {"labels": {"app.kapicorp.dev/component": self.name}}}
-        )
-        logger.debug(f"Applied metadata patch for {self.name}.")
+        if type(workload) != CloudRunService:
+            self.apply_patch(
+                {"metadata": {"labels": {"app.kapicorp.dev/component": self.name}}}
+            )
+            logger.debug(f"Applied metadata patch for {self.name}.")
+
+        if namespace:
+            for o in self.get_content_list():
+                if o.root.kind != "Namespace":
+                    o.root.metadata.namespace = namespace

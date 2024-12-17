@@ -2,10 +2,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 from enum import StrEnum, auto
-from typing import Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Optional, Union
 
 from kapitan.inputs.kadet import BaseObj, load_from_search_paths
-from pydantic import DirectoryPath, Field, FilePath
+from pydantic import ConfigDict, DirectoryPath, Field, FilePath, model_validator
+from pydantic.alias_generators import to_camel
 
 kgenlib = load_from_search_paths("kgenlib")
 
@@ -68,6 +69,8 @@ class KubernetesBaseResource(kgenlib.BaseContent):
         self.root.kind = self.kind
 
         self.root.metadata.name = self.rendered_name or self.name
+        self.root.metadata.labels
+        self.root.metadata.annotations
         self.add_label("name", self.name)
         if self.config:
             self.add_labels(self.config.labels)
@@ -141,6 +144,9 @@ class KubernetesResource(KubernetesBaseResource):
     def set_namespace(self, namespace: str):
         self.root.metadata.namespace = namespace
 
+    def remove_namespace(self):
+        self.root.metadata.pop("namespace")
+
 
 class WorkloadTypes(StrEnum):
     DEPLOYMENT = auto()
@@ -148,12 +154,19 @@ class WorkloadTypes(StrEnum):
     DAEMONSET = auto()
     JOB = auto()
     CRONJOB = auto()
+    CLOUD_RUN_SERVICE = auto()
 
 
 class RestartPolicy(StrEnum):
     ALWAYS = "Always"
     ON_FAILURE = "OnFailure"
     NEVER = "Never"
+
+
+class ConcurrentPolicy(StrEnum):
+    ALLOW = "Allow"
+    FORBID = "Forbid"
+    REPLACE = "Replace"
 
 
 class ImagePullPolicy(StrEnum):
@@ -286,7 +299,9 @@ class ServiceAccountConfigSpec(KubernetesResourceSpec):
     namespace: Optional[str] = None
     rendered_name: Optional[str] = None
     name: Optional[str] = None
-    roles: Optional[List[Dict[str, Any]]] = None
+    roles: Optional[
+        list[dict[str, list[str]]] | dict[str, dict[str, list[str]] | list[str]]
+    ] = None
 
 
 class ContainerSpec(kgenlib.BaseModel):
@@ -298,7 +313,7 @@ class ContainerSpec(kgenlib.BaseModel):
     healthcheck: Optional[HealthCheckConfigSpec] = None
     image: str = None
     image_pull_policy: Optional[ImagePullPolicy] = ImagePullPolicy.IF_NOT_PRESENT
-    lifecycle: dict = {}
+    lifecycle: Optional[dict] = None
     pod_annotations: dict = {}
     pod_labels: dict = {}
     ports: Dict[str, ContainerPortSpec] = {}
@@ -306,6 +321,10 @@ class ContainerSpec(kgenlib.BaseModel):
     security: Optional[SecurityContextSpec] = None
     security_context: dict = {}
     volume_mounts: dict = {}
+
+
+class InitContainerSpec(ContainerSpec):
+    sidecar: Optional[bool] = None
 
 
 class ServiceTypes(StrEnum):
@@ -322,7 +341,7 @@ class SessionAffinity(StrEnum):
 
 class RoleBindingConfigSpec(KubernetesResourceSpec):
     roleRef: Optional[Dict[str, Any]] = None
-    subject: Optional[List[Dict[str, Any]]] = None
+    subjects: Optional[List[Dict[str, Any]]] = None
 
 
 class ServiceConfigSpec(KubernetesResourceSpec):
@@ -355,8 +374,9 @@ class NetworkPolicySpec(KubernetesResourceSpec):
 
 class WorkloadConfigSpec(KubernetesResourceSpec, ContainerSpec):
     type: Optional[WorkloadTypes] = WorkloadTypes.DEPLOYMENT
+    namespace: str | None = None
     schedule: Optional[str] = None
-    additional_containers: Optional[Dict[str, ContainerSpec]] = {}
+    additional_containers: Optional[Dict[str, Union[ContainerSpec, None]]] = {}
     additional_services: Optional[Dict[str, ServiceConfigSpec]] = {}
     annotations: dict = {}
     application: Optional[str] = None
@@ -371,7 +391,7 @@ class WorkloadConfigSpec(KubernetesResourceSpec, ContainerSpec):
     host_pid: Optional[bool] = None
     hpa: dict = {}
     image_pull_secrets: list = []
-    init_containers: Optional[Dict[str, ContainerSpec]] = {}
+    init_containers: Optional[Dict[str, Union[InitContainerSpec, None]]] = {}
     istio_policy: dict = {}
     keda_scaled_object: dict = {}
     labels: Dict[str, str] = {}
@@ -399,16 +419,25 @@ class WorkloadConfigSpec(KubernetesResourceSpec, ContainerSpec):
     workload_security_context: dict = {}
 
 
+class CloudRunServiceConfigSpec(WorkloadConfigSpec):
+    type: Optional[WorkloadTypes] = WorkloadTypes.CLOUD_RUN_SERVICE
+
+
 class DeploymentConfigSpec(WorkloadConfigSpec):
     type: Optional[WorkloadTypes] = WorkloadTypes.DEPLOYMENT
     update_strategy: Optional[dict] = {}
     strategy: Optional[dict] = {}
 
 
+class PodManagementPolicy(StrEnum):
+    ORDERED_READY = "OrderedReady"
+    PARALLEL = "Parallel"
+
+
 class StatefulSetConfigSpec(WorkloadConfigSpec):
     type: WorkloadTypes = WorkloadTypes.STATEFULSET
+    pod_management_policy: str = PodManagementPolicy.ORDERED_READY
     update_strategy: dict = {}
-    strategy: dict = {}
 
 
 class DaemonSetConfigSpec(WorkloadConfigSpec):
@@ -426,3 +455,94 @@ class JobConfigSpec(WorkloadConfigSpec):
 class CronJobConfigSpec(JobConfigSpec):
     type: WorkloadTypes = WorkloadTypes.CRONJOB
     schedule: str
+    concurrency_policy: Optional[ConcurrentPolicy] = ConcurrentPolicy.ALLOW
+
+
+ContainerProbeSpecTypes = Annotated[
+    Union[ContainerEXECProbeSpec, ContainerHTTPProbeSpec, ContainerTCPProbeSpec],
+    Field(discriminator="type"),
+]
+
+
+class ContainerProbes(kgenlib.BaseModel):
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+        extra="ignore",
+    )
+    type: ProbeTypes = Field(exclude=True)
+    initial_delay_seconds: int = 0
+    period_seconds: int = 10
+    timeout_seconds: int = 1
+    success_threshold: int = 1
+    failure_threshold: int = 3
+
+    # Define a class method for creating probes from data
+    @classmethod
+    def from_spec(cls, spec: ContainerProbeSpecTypes) -> Union["ContainerProbes", None]:
+        probe = None
+        if not spec or not spec.enabled:
+            return probe
+        probe_type = spec.type
+        if probe_type == ProbeTypes.TCP:
+            probe = TCPProbe.model_validate(spec)
+        elif probe_type == ProbeTypes.HTTP:
+            probe = HTTPProbe.model_validate(spec)
+        elif probe_type == ProbeTypes.EXEC:
+            probe = ExecProbe.model_validate(spec)
+        else:
+            raise ValueError(f"Invalid probe type: {probe_type}")
+        return probe.model_dump(by_alias=True)
+
+
+class HttpGet(kgenlib.BaseModel):
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        from_attributes=True,
+    )
+    path: str = "/"
+    port: str | int = 80
+    httpHeaders: Optional[List[dict]] = None
+    scheme: Optional[ProbeSchemeSpec] = ProbeSchemeSpec.HTTP
+
+
+class HTTPProbe(ContainerProbes):
+    httpGet: Optional[HttpGet] = None
+    port: str | int = Field(exclude=True)
+    path: str = Field(exclude=True)
+    scheme: Optional[ProbeSchemeSpec] = Field(exclude=True)
+    httpHeaders: Optional[List[dict]] = Field(exclude=True)
+
+    # Use a validator to handle the 'port' mapping
+    @model_validator(mode="after")
+    def map_port_to_http_config(self):
+        self.httpGet = HttpGet.model_validate(self)
+        return self
+
+
+class TCPProbe(ContainerProbes):
+    port: str | int = Field(exclude=True)
+    tcpSocket: Optional[dict] = None
+
+    # Use a validator to handle the 'port' mapping
+    @model_validator(mode="after")
+    def map_port_to_tcp_socket(self):
+        self.tcpSocket = {"port": self.port}
+        return self
+
+
+class ExecProbe(ContainerProbes):
+    command: List = Field(exclude=True)
+    exec: Optional[dict] = None
+
+    @model_validator(mode="after")
+    def map_command_to_exec_socket(self):
+        self.exec = {"command": self.command}
+        return self
+
+
+ContainerProbeTypes = Annotated[
+    Union[HTTPProbe, TCPProbe, ExecProbe], Field(discriminator="type")
+]
