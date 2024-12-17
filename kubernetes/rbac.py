@@ -24,13 +24,19 @@ class ServiceAccount(KubernetesResource):
     spec: Optional[ServiceAccountComponentConfigSpec] = None
 
     def body(self):
+        if self.config:
+            config = self.config
+            if isinstance(config, WorkloadConfigSpec):
+                self.name = config.service_account.name or self.name
+            else:
+                self.name = config.name or self.name
         super().body()
         if self.spec:
             self.add_annotations(self.spec.annotations)
 
 
 class RoleConfigSpec(KubernetesResourceSpec):
-    rules: List[Dict[str, Any]] = []
+    rules: list[dict[str, list[str]]] | dict[str, list[str] | dict[str, list[str]]] = []
 
 
 class Role(KubernetesResource):
@@ -41,32 +47,75 @@ class Role(KubernetesResource):
     def body(self):
         super().body()
         if self.spec:
-            self.root.rules = self.spec.rules
+            rules = self.spec.rules
+            resolved_rules = []
+            if isinstance(rules, list):
+                resolved_rules = rules
+            elif isinstance(rules, dict):
+                for rule_names, rule_config in rules.items():
+                    api_groups = set()
+                    resources = set()
+                    for rule_name in rule_names.split(","):
+                        rule_name = rule_name.strip()
+
+                        # by default if apiGroups and resources are not defined
+                        # they're going to be inferred from the rule name
+                        if "/" in rule_name:
+                            api_group, *resource_bits = rule_name.split("/")
+                            resource = "/".join(resource_bits)
+                        else:
+                            api_group = ""
+                            resource = rule_name
+                        api_groups.add(api_group)
+                        resources.add(resource)
+
+                    # if rule has form {name: [...]}
+                    # then the list is treated as role verbs
+                    if isinstance(rule_config, list):
+                        rule_config = {"verbs": rule_config}
+                    resolved_rules.append(
+                        {
+                            **{
+                                "apiGroups": sorted(api_groups),
+                                "resources": sorted(resources),
+                            },
+                            **rule_config,
+                        }
+                    )
+            else:
+                raise TypeError(
+                    f"rules are wrong type. expected list or dict, found: {type(rules)}"
+                )
+            self.root.rules = resolved_rules
 
 
 class RoleBinding(KubernetesResource):
     kind: str = "RoleBinding"
     api_version: str = "rbac.authorization.k8s.io/v1"
-    role: Role
-    sa: ServiceAccount
+    role: Optional[Role] = None
+    sa: Optional[ServiceAccount] = None
     spec: Optional[RoleBindingConfigSpec] = RoleBindingConfigSpec()
 
     def body(self):
         super().body()
-        default_role_ref = {
-            "apiGroup": "rbac.authorization.k8s.io",
-            "kind": "Role",
-            "name": self.role.name,
-        }
-        default_subject = [
-            {
-                "kind": "ServiceAccount",
-                "name": self.sa.name,
-                "namespace": self.sa.namespace,
+        if self.role and self.sa:
+            default_role_ref = {
+                "apiGroup": "rbac.authorization.k8s.io",
+                "kind": "Role",
+                "name": self.role.name,
             }
-        ]
-        self.root.roleRef = self.spec.roleRef or default_role_ref
-        self.root.subjects = self.spec.subject or default_subject
+            default_subject = [
+                {
+                    "kind": "ServiceAccount",
+                    "name": self.sa.name,
+                    "namespace": self.sa.namespace,
+                }
+            ]
+            self.root.roleRef = default_role_ref
+            self.root.subjects = default_subject
+        elif self.spec:
+            self.root.roleRef = self.spec.roleRef
+            self.root.subjects = self.spec.subjects
 
 
 class ClusterRoleBindingConfigSpec(KubernetesResourceSpec):
@@ -76,7 +125,7 @@ class ClusterRoleBindingConfigSpec(KubernetesResourceSpec):
 
 class ClusterRoleConfigSpec(KubernetesResourceSpec):
     rules: List[Dict[str, Any]] = []
-    binding: Optional[ClusterRoleBindingConfigSpec]
+    binding: Optional[ClusterRoleBindingConfigSpec] = None
 
 
 class ClusterRole(KubernetesResource):
@@ -92,26 +141,73 @@ class ClusterRole(KubernetesResource):
 class ClusterRoleBinding(KubernetesResource):
     kind: str = "ClusterRoleBinding"
     api_version: str = "rbac.authorization.k8s.io/v1"
-    sa: ServiceAccount
-    role: ClusterRole
-    spec: ClusterRoleConfigSpec
+    sa: Optional[ServiceAccount] = None
+    role: Optional[ClusterRole] = None
+    spec: Optional[ClusterRoleBindingConfigSpec] = ClusterRoleBindingConfigSpec()
 
     def body(self):
         super().body()
-        default_role_ref = {
-            "apiGroup": "rbac.authorization.k8s.io",
-            "kind": "ClusterRole",
-            "name": self.role.name,
-        }
-        default_subject = [
-            {
-                "kind": "ServiceAccount",
-                "name": self.sa.name,
-                "namespace": self.sa.namespace,
+        if self.role and self.sa:
+            default_role_ref = {
+                "apiGroup": "rbac.authorization.k8s.io",
+                "kind": "ClusterRole",
+                "name": self.role.name,
             }
+            default_subject = [
+                {
+                    "kind": "ServiceAccount",
+                    "name": self.sa.name,
+                    "namespace": self.sa.namespace,
+                }
+            ]
+            self.root.roleRef = default_role_ref
+            self.root.subjects = default_subject
+        elif self.spec:
+            self.root.roleRef = self.spec.roleRef
+            self.root.subjects = self.spec.subjects
+
+
+@kgenlib.register_generator(path="generators.kubernetes.cluster_rolebinding")
+class ClusterRoleBindingGenerator(kgenlib.BaseStore):
+    name: str
+
+    def body(self):
+        config = self.config
+        name = config.name or self.name
+        subjects = config.get("subjects") or []
+        processed_subjects = [
+            self._ensure_subject_format(subject) for subject in subjects
         ]
-        self.root.roleRef = self.spec.binding.roleRef or default_role_ref
-        self.root.subjects = self.spec.binding.subject or default_subject
+        config.subjects = processed_subjects
+
+        cluster_rolebinding = ClusterRoleBinding(name=name, spec=config)
+        self.add(cluster_rolebinding)
+
+    @staticmethod
+    def _ensure_subject_format(subject: Any) -> dict[str, str]:
+        # @TODO merge with RoleBindingGenerator logic
+        if isinstance(subject, dict):
+            return subject
+
+        if not isinstance(subject, str):
+            raise TypeError(f"subject has to be str or dict, not {type(subject)!r}")
+
+        try:
+            prefix, identity = subject.split(":")
+        except ValueError:
+            raise ValueError(f"could not parse {subject!r} into prefix:suffix")
+
+        match prefix:
+            case "user":
+                kind = "User"
+            case "group":
+                kind = "Group"
+            case "serviceAccount":
+                kind = "User"
+            case _:
+                raise ValueError(f"unrecognized identity prefix: {prefix!r}")
+
+        return {"kind": kind, "name": identity}
 
 
 @kgenlib.register_generator(path="generators.kubernetes.service_accounts")
@@ -141,3 +237,74 @@ class ServiceAccountGenerator(kgenlib.BaseStore):
                 spec=spec,
             )
             self.add(rb)
+
+
+@kgenlib.register_generator(path="generators.kubernetes.role")
+class RoleGenerator(kgenlib.BaseStore):
+    name: str
+
+    def body(self):
+        config = self.config
+        name = config.name or self.name
+        namespace = config.namespace
+        spec = {"rules": config.rules}
+        role = Role(name=name, namespace=namespace, spec=spec)
+        self.add(role)
+
+
+@kgenlib.register_generator(path="generators.kubernetes.cluster_role")
+class ClusterRoleGenerator(kgenlib.BaseStore):
+    name: str
+
+    def body(self):
+        config = self.config
+        name = config.name or self.name
+        spec = ClusterRoleConfigSpec(rules=config.rules)
+        role = ClusterRole(name=name, spec=spec)
+        self.add(role)
+
+
+@kgenlib.register_generator(path="generators.kubernetes.rolebinding")
+class RoleBindingGenerator(kgenlib.BaseStore):
+    name: str
+
+    def body(self):
+        config = self.config
+        name = config.name or self.name
+        namespace = config.namespace
+
+        subjects = config.get("subjects") or []
+        processed_subjects = [
+            self._ensure_subject_format(subject) for subject in subjects
+        ]
+        config.subjects = processed_subjects
+
+        role_binding = RoleBinding(name=name, namespace=namespace, spec=config)
+        self.add(role_binding)
+
+    @staticmethod
+    def _ensure_subject_format(subject: Any) -> dict[str, str]:
+        if isinstance(subject, dict):
+            return subject
+
+        if not isinstance(subject, str):
+            raise TypeError(f"subject has to be str or dict, not {type(subject)!r}")
+
+        # user:bamax@google.com
+        # group:eng-team@google.com
+        try:
+            prefix, identity = subject.split(":")
+        except ValueError:
+            raise ValueError(f"could not parse {subject!r} into prefix:suffix")
+
+        match prefix:
+            case "user":
+                kind = "User"
+            case "group":
+                kind = "Group"
+            case "serviceAccount":
+                kind = "User"
+            case _:
+                raise ValueError(f"unrecognized identity prefix: {prefix!r}")
+
+        return {"kind": kind, "name": identity}

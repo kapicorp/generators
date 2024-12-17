@@ -10,10 +10,10 @@ from .common import KubernetesResource, KubernetesResourceSpec, kgenlib
 
 class ArgoCDApplicationConfigSpec(KubernetesResourceSpec):
     project: str = "default"
-    destination: Dict = None
+    destination: dict = None
     source: dict
     sync_policy: dict = None
-    ignore_differences: dict = None
+    ignore_differences: list[dict] = None
 
 
 class ArgoCDApplication(KubernetesResource):
@@ -27,7 +27,7 @@ class ArgoCDApplication(KubernetesResource):
         self.root.spec.project = self.config.project
         destination = self.config.destination
         self.root.spec.destination.name = self.cluster.display_name or destination.name
-        self.root.spec.destination.namespace = destination.namespace
+        self.root.spec.destination.namespace = destination.get("namespace")
         self.root.spec.source = self.config.source
         self.root.spec.syncPolicy = self.config.sync_policy
 
@@ -44,7 +44,6 @@ class ArgoCDApplication(KubernetesResource):
     path="generators.argocd.applications",
     global_generator=True,
     activation_path="argocd.app_of_apps",
-    apply_patches=["generators.argocd.defaults.application"],
 )
 class GenArgoCDApplication(kgenlib.BaseStore):
     def body(self):
@@ -53,6 +52,11 @@ class GenArgoCDApplication(kgenlib.BaseStore):
         name = config.get("name", self.name)
         enabled = config.get("enabled", True)
         clusters = self.inventory.parameters.get("clusters", {})
+        single_cluster = config.get("single_cluster", False)
+        if single_cluster:
+            cluster = self.inventory.parameters.get("cluster", {})
+            cluster_id = cluster.get("user", None)
+            clusters = {cluster_id: cluster}
 
         if enabled:
             for cluster in clusters.keys():
@@ -70,40 +74,6 @@ class GenArgoCDApplication(kgenlib.BaseStore):
                     cluster=cluster_config,
                 )
                 self.add(argo_application)
-
-
-@kgenlib.register_generator(
-    path="isoflow.graphs",
-    global_generator=True,
-    activation_path="argocd.app_of_apps",
-)
-class GenArgoCDApplicationPerResource(kgenlib.BaseStore):
-    def body(self):
-        graph_config = self.config
-        argocd_application_config = graph_config.get("argocd_application_config", {})
-
-        # Applies generator defaults to the config of the argocd application
-        kgenlib.patch_config(
-            argocd_application_config,
-            self.inventory,
-            "parameters.generators.argocd.defaults.application",
-        )
-
-        graph_name = graph_config.get("name", self.name)
-        argocd_application_config.setdefault("source", {}).setdefault("directory", {})[
-            "include"
-        ] = f"{graph_name}.yml"
-        argocd_application_config["source"].pop("plugin", None)
-
-        namespace = argocd_application_config["destination"]["namespace"]
-        cluster = argocd_application_config["destination"]["name"]
-
-        graph_name = f"{graph_name}.{namespace}.{cluster}"
-
-        argo_application = ArgoCDApplication(
-            name=graph_name, config=argocd_application_config
-        )
-        self.add(argo_application)
 
 
 class ArgoCDProjectConfigSpec(KubernetesResourceSpec):
@@ -130,7 +100,8 @@ class ArgoCDProject(KubernetesResource):
 
 @kgenlib.register_generator(
     path="generators.argocd.projects",
-    apply_patches=["generators.argocd.defaults.project"],
+    global_generator=True,
+    activation_path="argocd.app_of_apps",
 )
 class GenArgoCDProject(kgenlib.BaseStore):
     def body(self):

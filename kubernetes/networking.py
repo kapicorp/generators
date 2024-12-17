@@ -2,10 +2,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from enum import StrEnum, auto
+from enum import StrEnum
 from typing import Any, Dict, List, Optional
-
-from kadet import BaseModel
 
 from .common import (
     KubernetesResource,
@@ -200,6 +198,7 @@ class GCPGatewayPolicy(KubernetesResource):
 class GCPBackendConfigSpec(KubernetesResourceSpec):
     timeout_sec: Optional[int] = 30
     logging: Optional[Dict[str, Any]] = None
+    iap: Optional[Dict[str, Any]] = None
 
 
 class GCPBackendPolicy(KubernetesResource):
@@ -212,6 +211,7 @@ class GCPBackendPolicy(KubernetesResource):
 
         self.root.spec.default.timeoutSec = self.config.timeout_sec or 30
         self.root.spec.default.logging = self.config.logging or {"enabled": False}
+        self.root.spec.default.iap = self.config.iap
 
         self.root.spec.targetRef = {
             "group": "",
@@ -269,6 +269,18 @@ class HTTPRoute(KubernetesResource):
             self.root.spec.setdefault("rules", []).append(rule)
 
 
+@kgenlib.register_generator(path="generators.kubernetes.routes")
+class RouteGenerator(kgenlib.BaseStore):
+    config: HTTPRouteSpec
+
+    def body(self):
+        config = self.config
+        name = self.name
+
+        route = HTTPRoute(name=name, config=config)
+        self.add(route)
+
+
 @kgenlib.register_generator(path="generators.kubernetes.gateway")
 class GatewayGenerator(kgenlib.BaseStore):
     def body(self):
@@ -293,18 +305,30 @@ class GatewayGenerator(kgenlib.BaseStore):
                     route_config,
                     gateway_name=gateway.name,
                     gateway_namespace=gateway.namespace,
+                    namespace=route_config.get("namespace") or gateway.namespace,
                 ),
             )
             self.add(route)
 
             for service_id, service_config in route_config.get("services", {}).items():
                 healthcheck = HealthCheckPolicy(
-                    name=f"{service_id}", config=service_config
+                    name=f"{service_id}",
+                    config=dict(
+                        service_config,
+                        namespace=service_config.get("namespace") or gateway.namespace,
+                    ),
                 )
                 self.add(healthcheck)
 
                 backend_policy = GCPBackendPolicy(
-                    name=f"{service_id}", config=GCPBackendConfigSpec(**service_config)
+                    name=f"{service_id}",
+                    config=GCPBackendConfigSpec(
+                        **dict(
+                            service_config,
+                            namespace=route_config.get("namespace")
+                            or gateway.namespace,
+                        )
+                    ),
                 )
 
                 self.add(backend_policy)
@@ -335,8 +359,13 @@ class Service(KubernetesResource):
         if spec.headless:
             self.root.spec.clusterIP = "None"
         self.root.spec.sessionAffinity = spec.session_affinity
+        additional_containers = [
+            _config
+            for _config in config.additional_containers.values()
+            if _config is not None
+        ]
         all_ports = [config.ports] + [
-            container.ports for container in config.additional_containers.values()
+            container.ports for container in additional_containers
         ]
 
         self.exposed_ports = {}

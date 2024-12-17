@@ -2,7 +2,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from .common import KubernetesResource
+from .common import KubernetesResource, kgenlib
 
 
 class KedaScaledObject(KubernetesResource):
@@ -17,6 +17,16 @@ class KedaScaledObject(KubernetesResource):
         self.root.spec.scaleTargetRef.kind = workload.root.kind
         self.root.spec.scaleTargetRef.apiVersion = workload.root.apiVersion
         self.root.spec.update(config.keda_scaled_object)
+        if self.root.spec.maxReplicaCount == 0:
+            # keda supports pausing autoscaling
+            # but doesn't support setting maxReplicaCount to 0
+            self.root.metadata.annotations.update(
+                {
+                    "autoscaling.keda.sh/paused-replicas": "0",
+                    "autoscaling.keda.sh/paused": "true",
+                }
+            )
+            self.root.spec.maxReplicaCount = 1
 
         # remove replica from workload because HPA is managing it
         workload.root.spec.pop("replicas")
@@ -83,3 +93,19 @@ class HorizontalPodAutoscaler(KubernetesResource):
 
         # remove replica from workload because HPA is managing it
         workload.root.spec.pop("replicas")
+
+
+@kgenlib.register_generator(path="generators.kubernetes.vpa")
+class VerticalPodAutoscalerGenerator(kgenlib.BaseStore):
+    def body(self):
+        name = self.config.get("name", self.name)
+        self.config.vpa.update_mode = self.config.update_mode
+        self.config.vpa.resource_policy = self.config.resource_policy
+
+        workload = KubernetesResource(
+            name=name, kind=self.config.kind, api_version=self.config.api_version
+        )
+
+        self.add(
+            VerticalPodAutoscaler(name=name, config=self.config, workload=workload)
+        )
