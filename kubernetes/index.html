@@ -1,0 +1,2639 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://generators.kapitan.dev/kubernetes/">
+      
+      <link rel="icon" href="../images/kapitan_logo.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>Kubernetes - Kapitan Generators</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.472b142f.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.08040f6c.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/custom.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+
+  <script id="__analytics">function __md_analytics(){function n(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],n("js",new Date),n("config","G-LPSPG0D0Q0"),document.addEventListener("DOMContentLoaded",function(){document.forms.search&&document.forms.search.query.addEventListener("blur",function(){this.value&&n("event","search",{search_term:this.value})}),document$.subscribe(function(){var a=document.forms.feedback;if(void 0!==a)for(var e of a.querySelectorAll("[type=submit]"))e.addEventListener("click",function(e){e.preventDefault();var t=document.location.pathname,e=this.getAttribute("data-md-value");n("event","feedback",{page:t,data:e}),a.firstElementChild.disabled=!0;e=a.querySelector(".md-feedback__note [data-md-value='"+e+"']");e&&(e.hidden=!1)}),a.hidden=!1}),location$.subscribe(function(e){n("config","G-LPSPG0D0Q0",{page_path:e.pathname})})});var e=document.createElement("script");e.async=!0,e.src="https://www.googletagmanager.com/gtag/js?id=G-LPSPG0D0Q0",document.getElementById("__analytics").insertAdjacentElement("afterEnd",e)}</script>
+
+  
+    <script>var consent;"undefined"==typeof __md_analytics||(consent=__md_get("__consent"))&&consent.analytics&&__md_analytics()</script>
+  
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#kubernetes-generator" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Kapitan Generators" class="md-header__button md-logo" aria-label="Kapitan Generators" data-md-component="logo">
+      
+  <img src="../images/kapitan_logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Kapitan Generators
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Kubernetes
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent=""  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+            </label>
+          
+        
+          
+          
+          
+          <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent=""  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/kapicorp/generators" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kapicorp/generators
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href=".." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../tutorial/concepts/" class="md-tabs__link">
+        Develop Generators
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="./" class="md-tabs__link md-tabs__link--active">
+        Available Generators
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Kapitan Generators" class="md-nav__button md-logo" aria-label="Kapitan Generators" data-md-component="logo">
+      
+  <img src="../images/kapitan_logo.png" alt="logo">
+
+    </a>
+    Kapitan Generators
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/kapicorp/generators" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kapicorp/generators
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Develop Generators
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Develop Generators" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Develop Generators
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/concepts/" class="md-nav__link">
+        Concepts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/target_generators/" class="md-nav__link">
+        Target generators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/global_generators/" class="md-nav__link">
+        Global Generators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/setup/" class="md-nav__link">
+        Setup
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/tutorial/" class="md-nav__link">
+        Example code
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/patching/" class="md-nav__link">
+        Patching
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/mutations/" class="md-nav__link">
+        Mutations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2_9" type="checkbox" id="__nav_2_9" >
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_2_9">
+          Classes
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Classes" data-md-level="2">
+        <label class="md-nav__title" for="__nav_2_9">
+          <span class="md-nav__icon md-icon"></span>
+          Classes
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/basecontent/" class="md-nav__link">
+        BaseContent
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/basestore/" class="md-nav__link">
+        BaseStore
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/basegenerator/" class="md-nav__link">
+        BaseGenerator
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Available Generators
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Available Generators" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Available Generators
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Kubernetes
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Kubernetes
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#getting-started" class="md-nav__link">
+    Getting started
+  </a>
+  
+    <nav class="md-nav" aria-label="Getting started">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#download-the-kapitan-reference-repository" class="md-nav__link">
+    Download the kapitan-reference repository
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-target-file" class="md-nav__link">
+    Create a target file
+  </a>
+  
+    <nav class="md-nav" aria-label="Create a target file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#initial-content-of-inventorytargetsdemoyml" class="md-nav__link">
+    Initial content of inventory/targets/demo.yml
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#every-change-compile-your-targets" class="md-nav__link">
+    EVERY CHANGE -&gt; Compile your targets
+  </a>
+  
+    <nav class="md-nav" aria-label="EVERY CHANGE -&gt; Compile your targets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#to-compile-only-the-demo-target" class="md-nav__link">
+    To compile only the demo target
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to-compile-all-targets" class="md-nav__link">
+    To compile all targets
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-a-deployment" class="md-nav__link">
+    Create a deployment
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#defining-envs" class="md-nav__link">
+    Defining envs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#defining-ports" class="md-nav__link">
+    Defining ports
+  </a>
+  
+    <nav class="md-nav" aria-label="Defining ports">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#liveness-and-readiness-checks" class="md-nav__link">
+    Liveness and Readiness checks
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exposing-a-service" class="md-nav__link">
+    Exposing a service
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#defining-additional-services" class="md-nav__link">
+    Defining additional services
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#config-maps-and-secrets" class="md-nav__link">
+    Config Maps and Secrets
+  </a>
+  
+    <nav class="md-nav" aria-label="Config Maps and Secrets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#simple-config-map" class="md-nav__link">
+    Simple config map
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mounting-a-config-map-as-a-directory" class="md-nav__link">
+    Mounting a config map as a directory
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-jinja-templates-as-configurations" class="md-nav__link">
+    Use Jinja templates as configurations
+  </a>
+  
+    <nav class="md-nav" aria-label="Use Jinja templates as configurations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#add-external-files-to-configmaps" class="md-nav__link">
+    Add external files to ConfigMaps
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filtering-files-to-mount" class="md-nav__link">
+    Filtering files to mount
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secrets-auto-base64-encode" class="md-nav__link">
+    Secrets: auto base64 encode
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#versioned-configmaps-and-secrets" class="md-nav__link">
+    Versioned ConfigMaps and Secrets
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shared-configmaps-and-secrets" class="md-nav__link">
+    Shared ConfigMaps and Secrets
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment" class="md-nav__link">
+    Deployment
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#volume-mounts-and-volumes" class="md-nav__link">
+    Volume Mounts and Volumes
+  </a>
+  
+    <nav class="md-nav" aria-label="Volume Mounts and Volumes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#volume-from-storageclass" class="md-nav__link">
+    Volume from StorageClass
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hostpath" class="md-nav__link">
+    HostPath
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#daemonset" class="md-nav__link">
+    DaemonSet
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#statefulset" class="md-nav__link">
+    StatefulSet
+  </a>
+  
+    <nav class="md-nav" aria-label="StatefulSet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#volume-mounts-and-volume-claims" class="md-nav__link">
+    Volume Mounts and Volume Claims
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jobs-and-cronjobs" class="md-nav__link">
+    Jobs and CronJobs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-containers-sidecars" class="md-nav__link">
+    Additional containers (sidecars)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#init-containers" class="md-nav__link">
+    Init Containers
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#network-policies" class="md-nav__link">
+    Network Policies
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prometheus-rules-and-service-monitor-resources" class="md-nav__link">
+    Prometheus rules and Service Monitor resources
+  </a>
+  
+    <nav class="md-nav" aria-label="Prometheus rules and Service Monitor resources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prometheusrules" class="md-nav__link">
+    PrometheusRules
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#servicemonitor" class="md-nav__link">
+    ServiceMonitor
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#role-role-bindings-and-cluster-role-cluster-role-bindings" class="md-nav__link">
+    Role, Role-Bindings and Cluster-Role, Cluster-Role-Bindings
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#podsecuritypolicy" class="md-nav__link">
+    PodSecurityPolicy
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#defining-default-values-for-multiple-components" class="md-nav__link">
+    Defining default values for multiple components
+  </a>
+  
+    <nav class="md-nav" aria-label="Defining default values for multiple components">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#global-generator-defaults" class="md-nav__link">
+    Global Generator Defaults
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#application-defaults" class="md-nav__link">
+    Application defaults
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../terraform/" class="md-nav__link">
+        Terraform
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#getting-started" class="md-nav__link">
+    Getting started
+  </a>
+  
+    <nav class="md-nav" aria-label="Getting started">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#download-the-kapitan-reference-repository" class="md-nav__link">
+    Download the kapitan-reference repository
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-target-file" class="md-nav__link">
+    Create a target file
+  </a>
+  
+    <nav class="md-nav" aria-label="Create a target file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#initial-content-of-inventorytargetsdemoyml" class="md-nav__link">
+    Initial content of inventory/targets/demo.yml
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#every-change-compile-your-targets" class="md-nav__link">
+    EVERY CHANGE -&gt; Compile your targets
+  </a>
+  
+    <nav class="md-nav" aria-label="EVERY CHANGE -&gt; Compile your targets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#to-compile-only-the-demo-target" class="md-nav__link">
+    To compile only the demo target
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#to-compile-all-targets" class="md-nav__link">
+    To compile all targets
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-a-deployment" class="md-nav__link">
+    Create a deployment
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#defining-envs" class="md-nav__link">
+    Defining envs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#defining-ports" class="md-nav__link">
+    Defining ports
+  </a>
+  
+    <nav class="md-nav" aria-label="Defining ports">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#liveness-and-readiness-checks" class="md-nav__link">
+    Liveness and Readiness checks
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exposing-a-service" class="md-nav__link">
+    Exposing a service
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#defining-additional-services" class="md-nav__link">
+    Defining additional services
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#config-maps-and-secrets" class="md-nav__link">
+    Config Maps and Secrets
+  </a>
+  
+    <nav class="md-nav" aria-label="Config Maps and Secrets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#simple-config-map" class="md-nav__link">
+    Simple config map
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mounting-a-config-map-as-a-directory" class="md-nav__link">
+    Mounting a config map as a directory
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-jinja-templates-as-configurations" class="md-nav__link">
+    Use Jinja templates as configurations
+  </a>
+  
+    <nav class="md-nav" aria-label="Use Jinja templates as configurations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#add-external-files-to-configmaps" class="md-nav__link">
+    Add external files to ConfigMaps
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filtering-files-to-mount" class="md-nav__link">
+    Filtering files to mount
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secrets-auto-base64-encode" class="md-nav__link">
+    Secrets: auto base64 encode
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#versioned-configmaps-and-secrets" class="md-nav__link">
+    Versioned ConfigMaps and Secrets
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shared-configmaps-and-secrets" class="md-nav__link">
+    Shared ConfigMaps and Secrets
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment" class="md-nav__link">
+    Deployment
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#volume-mounts-and-volumes" class="md-nav__link">
+    Volume Mounts and Volumes
+  </a>
+  
+    <nav class="md-nav" aria-label="Volume Mounts and Volumes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#volume-from-storageclass" class="md-nav__link">
+    Volume from StorageClass
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hostpath" class="md-nav__link">
+    HostPath
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#daemonset" class="md-nav__link">
+    DaemonSet
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#statefulset" class="md-nav__link">
+    StatefulSet
+  </a>
+  
+    <nav class="md-nav" aria-label="StatefulSet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#volume-mounts-and-volume-claims" class="md-nav__link">
+    Volume Mounts and Volume Claims
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jobs-and-cronjobs" class="md-nav__link">
+    Jobs and CronJobs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-containers-sidecars" class="md-nav__link">
+    Additional containers (sidecars)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#init-containers" class="md-nav__link">
+    Init Containers
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#network-policies" class="md-nav__link">
+    Network Policies
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prometheus-rules-and-service-monitor-resources" class="md-nav__link">
+    Prometheus rules and Service Monitor resources
+  </a>
+  
+    <nav class="md-nav" aria-label="Prometheus rules and Service Monitor resources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prometheusrules" class="md-nav__link">
+    PrometheusRules
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#servicemonitor" class="md-nav__link">
+    ServiceMonitor
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#role-role-bindings-and-cluster-role-cluster-role-bindings" class="md-nav__link">
+    Role, Role-Bindings and Cluster-Role, Cluster-Role-Bindings
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#podsecuritypolicy" class="md-nav__link">
+    PodSecurityPolicy
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#defining-default-values-for-multiple-components" class="md-nav__link">
+    Defining default values for multiple components
+  </a>
+  
+    <nav class="md-nav" aria-label="Defining default values for multiple components">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#global-generator-defaults" class="md-nav__link">
+    Global Generator Defaults
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#application-defaults" class="md-nav__link">
+    Application defaults
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  <a href="https://github.com/kapicorp/generators/edit/master/docs/kubernetes.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<h1 id="kubernetes-generator">Kubernetes Generator</h1>
+<p>The Kubernetes generator allows to quickly generate Kubernetes manifests.</p>
+<h2 id="getting-started">Getting started</h2>
+<h3 id="download-the-kapitan-reference-repository">Download the <code>kapitan-reference</code> repository</h3>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:kapicorp/kapitan-reference.git<span class="w"> </span>kapitan-templates
+<span class="nb">cd</span><span class="w"> </span>kapitan-templates
+</code></pre></div>
+<h3 id="create-a-target-file">Create a target file</h3>
+<p>Create a new kapitan <em>target</em> file in any subdirectory of the <code>inventory/targets</code> folder.</p>
+<p>For this tutorial, we will assume the target file to be <code>inventory/targets/demo.yml</code></p>
+<blockquote>
+<p>The target <em>name</em> is the name of the file without the extentions (e.g <code>demo</code>).</p>
+</blockquote>
+<h4 id="initial-content-of-inventorytargetsdemoyml">Initial content of <code>inventory/targets/demo.yml</code></h4>
+<div class="highlight"><pre><span></span><code><span class="nt">classes</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># boilerplate class to get you started</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">common</span>
+</code></pre></div>
+<h3 id="every-change-compile-your-targets">EVERY CHANGE -&gt; Compile your targets</h3>
+<p>EVERY time you make a change, you will want to tell <code>kapitan</code> to compile your targets.
+<code>kapitan</code> will create a folder for each target under the <code>compiled</code> folder</p>
+<h4 id="to-compile-only-the-demo-target">To compile only the <code>demo</code> target</h4>
+<p><code>./kapitan compile -t demo</code></p>
+<h4 id="to-compile-all-targets">To compile all targets</h4>
+<p><code>./kapitan compile</code></p>
+<h2 id="create-a-deployment">Create a deployment</h2>
+<p>Let's start by creating a simple component, a <code>deployment</code> to be more precise.</p>
+<blockquote>
+<p>Note: Also see the StatefulSet and Jobs sections!</p>
+</blockquote>
+<p>We will use the <code>jmalloc/echo-server</code> for this demo.</p>
+<p>The generator is expecting components to be defined under the <code>parameters.components</code> path of the inventory.</p>
+<p>For instance, create a component <code>echo-server</code>, simply create the following section:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">classes</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># boilerplate class to get you started</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">common</span>
+
+<span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">components</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">echo-server</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jmalloc/echo-server</span>
+</code></pre></div>
+<p>Run <code>kapitan compile</code> and check the output in the <code>compiled/demo/manifests</code> folder.</p>
+<h2 id="defining-envs">Defining envs</h2>
+<p>You can define env variables by nesting them under the <code>env</code> directive:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">components</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">echo-server</span><span class="p">:</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">&lt;other config&gt;</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">env</span><span class="p p-Indicator">:</span>
+<span class="w">        </span><span class="nt">KAPITAN_ROCKS</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;YES!</span>
+</code></pre></div>
+<p>You can also use <code>secretKeyRef</code> and <code>configMapKeyRef</code> provided you have defined your secrets/configmaps below.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">components</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">echo-server</span><span class="p">:</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">&lt;other config&gt;</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">env</span><span class="p p-Indicator">:</span>
+<span class="w">        </span><span class="nt">KAPITAN_SECRET</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">a_secret          *OPTIONAL*</span>
+<span class="w">            </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;kapitan_secret&#39;</span>
+</code></pre></div>
+<blockquote>
+<p><em>NOTE</em> that you do not need to specify the <code>name</code> directive, as the generator will attempt to work out where to get it from.</p>
+</blockquote>
+<p>Also <code>fieldRef</code> works as expected</p>
+<div class="highlight"><pre><span></span><code><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">components</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">echo-server</span><span class="p">:</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">&lt;other config&gt;</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">env</span><span class="p p-Indicator">:</span>
+<span class="w">        </span><span class="nt">NODE_NAME</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">fieldRef</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">fieldPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spec.nodeName</span>
+</code></pre></div>
+<h2 id="defining-ports">Defining ports</h2>
+<p>You can define the ports your component uses by adding them under the <code>ports</code> directive:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">components</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">echo-server</span><span class="p">:</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">&lt;other config&gt;</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">ports</span><span class="p p-Indicator">:</span>
+<span class="w">        </span><span class="nt">http</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">container_port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8080</span>
+</code></pre></div>
+<p>The above will produce the following effect:</p>
+<div class="highlight"><pre><span></span><code><span class="gd">--- a/compiled/demo/manifests/echo-server-bundle.yml</span>
+<span class="gi">+++ b/compiled/demo/manifests/echo-server-bundle.yml</span>
+<span class="gu">@@ -38,6 +38,10 @@ spec:</span>
+<span class="w"> </span>        - image: jmalloc/echo-server
+<span class="w"> </span>          imagePullPolicy: IfNotPresent
+<span class="w"> </span>          name: echo-server
+<span class="gi">+          ports:</span>
+<span class="gi">+            - containerPort: 8080</span>
+<span class="gi">+              name: http</span>
+<span class="gi">+              protocol: TCP</span>
+</code></pre></div>
+<h3 id="liveness-and-readiness-checks">Liveness and Readiness checks</h3>
+<p>You can also quickly add a <code>readiness</code>/<code>liveness</code> check:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">components</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">echo-server</span><span class="p">:</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">&lt;other config&gt;</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">healthcheck</span><span class="p p-Indicator">:</span>
+<span class="w">        </span><span class="nt">readiness</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
+<span class="w">          </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
+<span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/health/readiness</span>
+<span class="w">          </span><span class="nt">timeout_seconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">        </span><span class="nt">liveness</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
+<span class="w">          </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
+<span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/health/liveness</span>
+<span class="w">          </span><span class="nt">timeout_seconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+</code></pre></div>
+<p>which produces:</p>
+<div class="highlight"><pre><span></span><code><span class="gd">--- a/compiled/demo/manifests/echo-server-bundle.yml</span>
+<span class="gi">+++ b/compiled/demo/manifests/echo-server-bundle.yml</span>
+<span class="gu">@@ -42,6 +42,15 @@ spec:</span>
+<span class="w"> </span>            - containerPort: 8080
+<span class="w"> </span>              name: http
+<span class="w"> </span>              protocol: TCP
+<span class="gi">+          readinessProbe:</span>
+<span class="gi">+            failureThreshold: 3</span>
+<span class="gi">+            httpGet:</span>
+<span class="gi">+              path: /health/readiness</span>
+<span class="gi">+              port: http</span>
+<span class="gi">+              scheme: HTTP</span>
+<span class="gi">+            periodSeconds: 10</span>
+<span class="gi">+            successThreshold: 1</span>
+<span class="gi">+            timeoutSeconds: 3</span>
+<span class="gi">+          livenessProbe:</span>
+<span class="gi">+            failureThreshold: 3</span>
+<span class="gi">+            httpGet:</span>
+<span class="gi">+              path: /health/liveness</span>
+<span class="gi">+              port: http</span>
+<span class="gi">+              scheme: HTTP</span>
+<span class="gi">+            periodSeconds: 10</span>
+<span class="gi">+            successThreshold: 1</span>
+<span class="gi">+            timeoutSeconds: 3</span>
+</code></pre></div>
+<blockquote>
+<p>Types <code>tcp</code> and <code>command</code> are also supported.</p>
+</blockquote>
+<h2 id="exposing-a-service">Exposing a service</h2>
+<p>If you want to expose the service, add the <code>service</code> directive with the desired service <code>type</code>, and define the <code>service_port</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">components</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">echo-server</span><span class="p">:</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">&lt;other config&gt;</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">service</span><span class="p p-Indicator">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterIP</span>
+<span class="w">      </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">http</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">service_port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<span class="w">          </span><span class="nt">container_port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8080</span>
+</code></pre></div>
+<blockquote>
+<p><em>Note</em>: if you want to prevent a port from being added to the service, omit the <code>&lt;service_port&gt;</code> directive</p>
+</blockquote>
+<p>Which will create a service manifest with the same name as the component, and will produce the following effect:</p>
+<div class="highlight"><pre><span></span><code><span class="gd">--- a/compiled/demo/manifests/echo-server-bundle.yml</span>
+<span class="gi">+++ b/compiled/demo/manifests/echo-server-bundle.yml</span>
+<span class="gu">@@ -52,3 +52,21 @@ metadata:</span>
+<span class="w"> </span>    name: echo-server
+<span class="w"> </span>  name: echo-server
+<span class="w"> </span>  namespace: demo
+<span class="gi">+---</span>
+<span class="gi">+apiVersion: v1</span>
+<span class="gi">+kind: Service</span>
+<span class="gi">+metadata:</span>
+<span class="gi">+  labels:</span>
+<span class="gi">+    app: echo-server</span>
+<span class="gi">+  name: echo-server</span>
+<span class="gi">+  namespace: demo</span>
+<span class="gi">+spec:</span>
+<span class="gi">+  ports:</span>
+<span class="gi">+    - name: http</span>
+<span class="gi">+      port: 80</span>
+<span class="gi">+      protocol: TCP</span>
+<span class="gi">+      targetPort: http</span>
+<span class="gi">+  selector:</span>
+<span class="gi">+    app: echo-server</span>
+<span class="gi">+  sessionAffinity: None</span>
+<span class="gi">+  type: LoadBalancer</span>
+</code></pre></div>
+<p>If you want, you can give the service a different name by using the <code>service_name</code> directive.</p>
+<p>The service specification uses the following directives:</p>
+<table>
+<thead>
+<tr>
+<th>directive</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>service_name</td>
+<td>\&lt;<code>string</code>&gt; defines the name for the service</td>
+</tr>
+<tr>
+<td>type</td>
+<td>\&lt;<code>LoadBalancer</code>|<code>ClusterIP</code>|<code>NodePort</code>&gt; the kubernetes service type</td>
+</tr>
+<tr>
+<td>selector</td>
+<td>\&lt;<code>dict</code>&gt; <code>key</code>: <code>value</code> dict of additional selectors for the service</td>
+</tr>
+<tr>
+<td>publish_not_ready_address</td>
+<td>\&lt;<code>bool</code>&gt; set <code>spec.publishNotReadyAddresses</code></td>
+</tr>
+<tr>
+<td>headless</td>
+<td>\&lt;<code>bool</code>&gt; makes service headless</td>
+</tr>
+<tr>
+<td>expose_ports</td>
+<td>\&lt;<code>list[strings]</code>&gt; list of <code>component.ports</code> to expose with this service</td>
+</tr>
+<tr>
+<td>session_affinity</td>
+<td>\&lt;<code>ClientIP</code>|<code>None</code>&gt; sets <code>spec.sessionAffinity</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="defining-additional-services">Defining additional services</h2>
+<p>Sometimes, like in the case of <code>vault</code> you might need to define more Services resources than just the main one.
+You can then define multiple services with the <code>additional_services</code> configuration. Each additional service respect the same options as the main service definition.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">service</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">service_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vault-internal</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterIP</span>
+<span class="w">  </span><span class="nt">publish_not_ready_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="w">  </span><span class="nt">headless</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+
+<span class="nt">additional_services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">vault-active</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterIP</span>
+<span class="w">    </span><span class="nt">publish_not_ready_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="w">    </span><span class="nt">selectors</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">vault-active</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">  </span><span class="nt">vault-standby</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterIP</span>
+<span class="w">    </span><span class="nt">publish_not_ready_address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="w">    </span><span class="nt">selectors</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">vault-active</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;false&quot;</span>
+</code></pre></div>
+<h2 id="config-maps-and-secrets">Config Maps and Secrets</h2>
+<p>Creating both <code>secrets</code> and <code>config maps</code> is very simple with Kapitan Generators, and the interface is very similar with minor differences between them.</p>
+<h3 id="simple-config-map">Simple config map</h3>
+<div class="highlight"><pre><span></span><code><span class="nt">config_maps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">data</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">echo-service.conf</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
+<span class="w">          </span><span class="no"># A configuration file</span>
+<span class="w">          </span><span class="no">example: true</span>
+</code></pre></div>
+<p>A ConfigMap manifest was created. The name is taken from the component.</p>
+<div class="highlight"><pre><span></span><code><span class="l l-Scalar l-Scalar-Plain">cat compiled/demo/manifests/echo-server-config.yml</span>
+<span class="l l-Scalar l-Scalar-Plain">apiVersion</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">echo-service.conf</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;#</span><span class="nv"> </span><span class="s">A</span><span class="nv"> </span><span class="s">configuration</span><span class="nv"> </span><span class="s">file</span>
+
+<span class="w">    </span><span class="s">example:</span><span class="nv"> </span><span class="s">true&#39;</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo-server</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo-server</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">demo</span>
+</code></pre></div>
+<h2 id="mounting-a-config-map-as-a-directory">Mounting a config map as a directory</h2>
+<p>Note that in the previous example the config map is not mounted, because the <code>mount</code> directive is missing.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">config_maps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">mount</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/opt/echo-service</span>
+<span class="w">    </span><span class="nt">data</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">echo-service.conf</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
+<span class="w">          </span><span class="no"># A configuration file</span>
+<span class="w">          </span><span class="no">example: true</span>
+</code></pre></div>
+<p>Simply adding the above configuration, will immediately configure the component to mount the config map we have just defined:</p>
+<div class="highlight"><pre><span></span><code><span class="gi">+          volumeMounts:</span>
+<span class="gi">+            - mountPath: /opt/echo-service</span>
+<span class="gi">+              name: config</span>
+<span class="gi">+              readOnly: true</span>
+<span class="w"> </span>      restartPolicy: Always
+<span class="w"> </span>      terminationGracePeriodSeconds: 30
+<span class="gi">+      volumes:</span>
+<span class="gi">+        - configMap:</span>
+<span class="gi">+            defaultMode: 420</span>
+<span class="gi">+            name: echo-server</span>
+<span class="gi">+          name: config</span>
+</code></pre></div>
+<h2 id="use-jinja-templates-as-configurations">Use Jinja templates as configurations</h2>
+<p>A more advanced way to create the configuration file, is to use an external <code>jinja</code> file as source:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">config_maps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">mount</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/opt/echo-service</span>
+<span class="w">    </span><span class="nt">data</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">echo-service.conf</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;components/echo-server/echo-server.conf.j2&quot;</span>
+<span class="w">        </span><span class="nt">values</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">example</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<p>with the file <a href="../../../components/echo-server/echo-server.conf.j2">echo-server.conf.j2</a> being a jinja template file.</p>
+<p>As expected, we can inject any value from the inventory into the the file.</p>
+<h3 id="add-external-files-to-configmaps">Add external files to ConfigMaps</h3>
+<p>You can also use the <code>file</code> and the <code>directory</code> directives to copy a single file or a full directory to your ConfigMaps or Secrets.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">config_maps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">mount</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/opt/echo-service</span>
+<span class="w">    </span><span class="nt">data</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">example.txt</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;components/echo-server/example.txt&quot;</span>
+</code></pre></div>
+<h3 id="filtering-files-to-mount">Filtering files to mount</h3>
+<p>We do not always expect to mount all files available in a config map. Sometimes in the config map we have a mix of files and other values destined to be consumed by environment variables instead.</p>
+<p>For instance, given the following setup, we can restrict the mount only to files defined in the <code>items</code> directive:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">config_maps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">mount</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/opt/echo-service</span>
+<span class="w">    </span><span class="nt">items</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo-service.conf</span>
+<span class="w">    </span><span class="nt">data</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">echo-service.conf</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;components/echo-server/echo-server.conf.j2&quot;</span>
+<span class="w">        </span><span class="nt">values</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">example</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">simple_config</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;not</span><span class="nv"> </span><span class="s">mounted&quot;</span>
+</code></pre></div>
+<p>the diff shows that the generator makes use of the items directive in the manifest:</p>
+<div class="highlight"><pre><span></span><code><span class="gd">--- a/compiled/demo/manifests/echo-server-config.yml</span>
+<span class="gi">+++ b/compiled/demo/manifests/echo-server-bundle.yml</span>
+<span class="gu">@@ -60,6 +60,9 @@ spec:</span>
+<span class="w"> </span>      volumes:
+<span class="w"> </span>        - configMap:
+<span class="w"> </span>            defaultMode: 420
+<span class="gi">+            items:</span>
+<span class="gi">+              - key: echo-service.conf</span>
+<span class="gi">+                path: echo-service.conf</span>
+<span class="w"> </span>            name: echo-server
+</code></pre></div>
+<h3 id="secrets-auto-base64-encode">Secrets: auto base64 encode</h3>
+<p>Secrets use the same configuations as config maps, but are nested under the <code>secrets</code> key.</p>
+<p>In addition, secrets support automatic base64 encoding with the <code>b64_encode</code> directive:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">secrets</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">secret</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">data</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">encoded_secret</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_secret</span>
+<span class="w">        </span><span class="nt">b64_encode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="l l-Scalar l-Scalar-Plain">cat compiled/demo/manifests/echo-server-secret.yml</span>
+<span class="l l-Scalar l-Scalar-Plain">apiVersion</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">encoded_secret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bXlfc2VjcmV0</span><span class="w">    </span><span class="c1"># ENCODED my_secret</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Secret</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo-server</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo-server</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">demo</span>
+<span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Opaque</span>
+</code></pre></div>
+<blockquote>
+<p>Note that, because in this example the <code>mount</code> directive is missing, the secret will not be mounted automatically.</p>
+</blockquote>
+<p>Please review the generic way of Kapitan to manage secrets at <a href="https://kapitan.dev/secrets/">https://kapitan.dev/secrets/</a> and <a href="https://medium.com/kapitan-blog/secrets-management-with-kapitan-47a0476bab10">Secrets management with Kapitan</a></p>
+<p>In summary, remember that you can summon the power of Google KMS (once setup) and use kapitan secrets like this:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">secrets</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">secret</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">data</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">encoded_secret</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_secret</span>
+<span class="w">        </span><span class="nt">b64_encode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">better_secret</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">?{gkms:targets/${target_name}/password||randomstr|base64}</span>
+</code></pre></div>
+<p>which will generate an truly encrypted secret using Google KMS (other backends also available)</p>
+<h3 id="versioned-configmaps-and-secrets">Versioned ConfigMaps and Secrets</h3>
+<p>The generator can automatically "version" you ConfigMap or Secrets so that the associated workload can automatically detect the change and handle it appropriately (rollout restart)</p>
+<p>In both secrets and config_maps, just define <code>versioned: true</code> (default: <code>false</code>)</p>
+<div class="highlight"><pre><span></span><code><span class="nt">config_maps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">versioned</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">mount</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/opt/echo-service</span>
+<span class="w">    </span><span class="nt">data</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">example.txt</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;components/echo-server/example.txt&quot;</span>
+</code></pre></div>
+<p>The generator will hash the content of the resource, and add it to the name of the rendered object:</p>
+<div class="highlight"><pre><span></span><code>kind: ConfigMap
+metadata:
+  labels:
+    name: echo-server
+  name: echo-server-01f3716a
+  namespace: echo-server
+  [cut]
+</code></pre></div>
+<p>when the content of the object changes, the hash will be updated accordingly.</p>
+<p><strong>PLEASE NOTE:</strong> <code>kapitan</code> is not responsible for garbage collecting unused secrets of config maps.</p>
+<h3 id="shared-configmaps-and-secrets">Shared ConfigMaps and Secrets</h3>
+<p>The generator can create shared Secrets and ConfigMaps.</p>
+<p>In secrets, you can define either <code>string_data</code> to get a <code>StringData</code> secret or <code>data</code> to get a <code>data</code> secret.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">generators</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">kubernetes</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">secrets</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">plain-plain-connection</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">string_data</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">CONNECTION</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql://?{plain:targets/${target_name}/shared-password-plain-as-plain-user||randomstr:35}:?{plain:targets/${target_name}/shared-password-plain-as-plain-pass||randomstr:35}/database</span>
+</code></pre></div>
+<h2 id="deployment">Deployment</h2>
+<p>You can define a <em>Deployment</em> by using the <code>type</code> directive to <code>deployment</code> (its also the default type)</p>
+<p>The deployment uses all (applicable) configurations available to the <code>deployment</code> type.</p>
+<h3 id="volume-mounts-and-volumes">Volume Mounts and Volumes</h3>
+<p><strong>PLEATE NOTE</strong> PV,PVCs are not yet created automatically <a href="https://github.com/kapicorp/kapitan-reference/issues/68">Issue #68</a></p>
+<h4 id="volume-from-storageclass">Volume from StorageClass</h4>
+<div class="highlight"><pre><span></span><code><span class="nt">volume_mounts</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">datadir</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/lib/mysql</span>
+
+<span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">datadir</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">accessModes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;ReadWriteOnce&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">storageClassName</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;myStorageClass&quot;</span>
+<span class="w">      </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">requests</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">storage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10Gi</span>
+</code></pre></div>
+<h4 id="hostpath">HostPath</h4>
+<div class="highlight"><pre><span></span><code><span class="nt">volume_mounts</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">datadir</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/lib/mysql</span>
+
+<span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">datadir</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">hostPath</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/mnt/mydisk/mysql</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DirectoryOrCreate</span>
+</code></pre></div>
+<h2 id="daemonset">DaemonSet</h2>
+<p>You can define a <em>DaemonSet</em> by using the <code>type</code> directive to <code>daemonset</code> (its also the default type)</p>
+<p>The deployment uses all (applicable) configurations available to the <code>daemonset</code> type.</p>
+<h2 id="statefulset">StatefulSet</h2>
+<p>You can define a <em>StatefulSet</em> by using the <code>type</code> directive to <code>statefulset</code> (that normally defaults to <code>deployment</code>)</p>
+<p>The statefulset uses all (applicable) configurations available to the <code>deployment</code> type, but also includes.</p>
+<h3 id="volume-mounts-and-volume-claims">Volume Mounts and Volume Claims</h3>
+<div class="highlight"><pre><span></span><code><span class="nt">volume_mounts</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">datadir</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/lib/mysql</span>
+
+<span class="nt">volume_claims</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">datadir</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">accessModes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;ReadWriteOnce&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">storageClassName</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;standard&quot;</span>
+<span class="w">      </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">requests</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">storage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10Gi</span>
+</code></pre></div>
+<h2 id="jobs-and-cronjobs">Jobs and CronJobs</h2>
+<p>You can define a <em>Job</em> by using the <code>type</code> directive to <code>job</code> (that normally defaults to <code>deployment</code>)</p>
+<p>You can define a <em>CronJob</em> by setting the <code>schedule</code> type to a valid value.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">components</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">postgres-backup</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">job</span>
+<span class="w">      </span><span class="nt">schedule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0</span><span class="nv"> </span><span class="s">*/6</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*&quot;</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">moep1990/pgbackup:lates</span>
+<span class="w">      </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">PGDATABASE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class="w">        </span><span class="nt">PGHOST</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class="w">        </span><span class="nt">PGPASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class="w">        </span><span class="nt">PGPORT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5432</span>
+<span class="w">        </span><span class="nt">PGUSER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+</code></pre></div>
+<p>Which will automatically generate the CronJob resource</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">batch/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CronJob</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-backup</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-backup</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">jobTemplate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">backoffLimit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">completions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">parallelism</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">app.kubernetes.io/managed-by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kapitan</span>
+<span class="w">            </span><span class="nt">app.kubernetes.io/part-of</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gitea</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-backup</span>
+<span class="w">        </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">containers</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PGDATABASE</span>
+<span class="w">                  </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PGHOST</span>
+<span class="w">                  </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PGPASSWORD</span>
+<span class="w">                  </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PGPORT</span>
+<span class="w">                  </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;5432&quot;</span>
+<span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PGUSER</span>
+<span class="w">                  </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class="w">              </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">moep1990/pgbackup:latest</span>
+<span class="w">              </span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Always</span>
+<span class="w">              </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-backup</span>
+<span class="w">          </span><span class="nt">restartPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Never</span>
+<span class="w">          </span><span class="nt">terminationGracePeriodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+<span class="w">  </span><span class="nt">schedule</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0 */6 * * *</span>
+</code></pre></div>
+<h2 id="additional-containers-sidecars">Additional containers (sidecars)</h2>
+<p>You can instruct the generator to add one or more additional containers to your definition:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">components</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">echo-server</span><span class="p">:</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">&lt;other config&gt;</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain"># Additional containers</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">additional_containers</span><span class="p p-Indicator">:</span>
+<span class="w">        </span><span class="nt">nginx</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<span class="w">          </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">nginx</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">service_port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+</code></pre></div>
+<p>You can access the same config_maps and secrets as the main container, but you can override mountpoints and subPaths</p>
+<p>For instance while this is defined in the outer "main" container scope, we can still mount the nginx config file:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">components</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">echo-server</span><span class="p">:</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">&lt;other config&gt;</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain"># Additional containers</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">additional_containers</span><span class="p p-Indicator">:</span>
+<span class="w">        </span><span class="nt">nginx</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<span class="w">          </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">nginx</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">service_port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<span class="w">          </span><span class="nt">config_maps</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">mount</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/nginx/conf.d/nginx.conf</span>
+<span class="w">              </span><span class="nt">subPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx.conf</span>
+
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">&lt;other config&gt;</span>
+<span class="w">      </span><span class="nt">config_maps</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">config</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">mount</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/opt/echo-service/echo-service.conf</span>
+<span class="w">          </span><span class="nt">subPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo-service.conf</span>
+<span class="w">          </span><span class="nt">data</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">echo-service.conf</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;components/echo-server/echo-server.conf.j2&quot;</span>
+<span class="w">              </span><span class="nt">values</span><span class="p">:</span>
+<span class="w">                </span><span class="nt">example</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">            </span><span class="nt">nginx.conf</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">                </span><span class="no">server {</span>
+<span class="w">                   </span><span class="no">listen       80;</span>
+<span class="w">                   </span><span class="no">server_name  localhost;</span>
+<span class="w">                   </span><span class="no">location / {</span>
+<span class="w">                       </span><span class="no">proxy_pass  http://localhost:8080/;</span>
+<span class="w">                   </span><span class="no">}</span>
+<span class="w">                   </span><span class="no">error_page   500 502 503 504  /50x.html;</span>
+<span class="w">                   </span><span class="no">location = /50x.html {</span>
+<span class="w">                       </span><span class="no">root   /usr/share/nginx/html;</span>
+<span class="w">                   </span><span class="no">}</span>
+<span class="w">                </span><span class="no">}</span>
+</code></pre></div>
+<h2 id="init-containers">Init Containers</h2>
+<p>You can instruct the generator to create initContainers by using the <code>init_containers</code> directive:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">components</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">echo-server</span><span class="p">:</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">&lt;other config&gt;</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain"># Init containers</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">init_containers</span><span class="p p-Indicator">:</span>
+<span class="w">        </span><span class="nt">busybox</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">busybox</span>
+<span class="w">          </span><span class="nt">commands</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo test</span>
+</code></pre></div>
+<p>Just like the <code>additional_containers</code>, tou can access the same config_maps and secrets as the main container, but you can override mountpoints and subPaths.</p>
+<h2 id="network-policies">Network Policies</h2>
+<p>You can also generate Network Policies by simply adding them under the <code>network_policies</code> structure.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># One or many network policies</span>
+<span class="nt">network_policies</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">default</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">pod_selector</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo-server</span>
+<span class="w">    </span><span class="nt">ingress</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">podSelector</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">                </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frontend</span>
+<span class="w">        </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+<span class="w">            </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6379</span>
+</code></pre></div>
+<p>Which will automatically generate the NetworkPolicy resource</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NetworkPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo-server</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo-server</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ingress</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">from</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">podSelector</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frontend</span>
+<span class="w">      </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6379</span>
+<span class="w">          </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+<span class="w">  </span><span class="nt">podSelector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo-server</span>
+<span class="w">  </span><span class="nt">policyTypes</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ingress</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Egress</span>
+</code></pre></div>
+<h2 id="prometheus-rules-and-service-monitor-resources">Prometheus rules and Service Monitor resources</h2>
+<p>Define PrometheusRules and ServiceMonitor alongside your application definitions.</p>
+<p>For a working example, have a look at <a href="../../../inventory/classes/components/kapicorp/tesoro_monitoring.yml"><code>tesoro_monitoring.yaml</code></a></p>
+<h3 id="prometheusrules">PrometheusRules</h3>
+<p>Simply add your definitions:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">components</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">tesoro</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">prometheus_rules</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TesoroFailedRequests</span>
+<span class="w">            </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tesoro_requests_failed_total</span><span class="nv"> </span><span class="s">has</span><span class="nv"> </span><span class="s">increased</span><span class="nv"> </span><span class="s">above</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">            </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sum by (job, namespace, service, env) (increase(tesoro_requests_failed_total[5m])) &gt; 0</span>
+<span class="w">            </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1m</span>
+<span class="w">            </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KapitanRevealRequestFailures</span>
+<span class="w">            </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;kapitan_reveal_requests_failed_total</span><span class="nv"> </span><span class="s">has</span><span class="nv"> </span><span class="s">increased</span><span class="nv"> </span><span class="s">above</span><span class="nv"> </span><span class="s">0&quot;</span>
+<span class="w">            </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sum by (job, namespace, service, env) (increase(kapitan_reveal_requests_failed_total[5m])) &gt; 0</span>
+<span class="w">            </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1m</span>
+<span class="w">            </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
+</code></pre></div>
+<p>to produce:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monitoring.coreos.com/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PrometheusRule</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tesoro.rules</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tesoro.rules</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tesoro</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">groups</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tesoro.rules</span>
+<span class="w">      </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TesoroFailedRequests</span>
+<span class="w">          </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tesoro_requests_failed_total has increased above 0</span>
+<span class="w">          </span><span class="nt">expr</span><span class="p">:</span>
+<span class="w">            </span><span class="l l-Scalar l-Scalar-Plain">sum by (job, namespace, service, env) (increase(tesoro_requests_failed_total[5m]))</span>
+<span class="w">            </span><span class="l l-Scalar l-Scalar-Plain">&gt; 0</span>
+<span class="w">          </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1m</span>
+<span class="w">          </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KapitanRevealRequestFailures</span>
+<span class="w">          </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kapitan_reveal_requests_failed_total has increased above 0</span>
+<span class="w">          </span><span class="nt">expr</span><span class="p">:</span>
+<span class="w">            </span><span class="l l-Scalar l-Scalar-Plain">sum by (job, namespace, service, env) (increase(kapitan_reveal_requests_failed_total[5m]))</span>
+<span class="w">            </span><span class="l l-Scalar l-Scalar-Plain">&gt; 0</span>
+<span class="w">          </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1m</span>
+<span class="w">          </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
+</code></pre></div>
+<h3 id="servicemonitor">ServiceMonitor</h3>
+<div class="highlight"><pre><span></span><code><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">components</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">tesoro</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">service_monitors</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">endpoints</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15s</span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/</span>
+<span class="w">            </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9095</span>
+</code></pre></div>
+<p>produces the following resource</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monitoring.coreos.com/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceMonitor</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tesoro-metrics</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tesoro-metrics</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tesoro</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">endpoints</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15s</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/</span>
+<span class="w">      </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9095</span>
+<span class="w">  </span><span class="nt">jobLabel</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tesoro-metrics</span>
+<span class="w">  </span><span class="nt">namespaceSelector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchNames</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tesoro</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tesoro</span>
+</code></pre></div>
+<h3 id="role-role-bindings-and-cluster-role-cluster-role-bindings">Role, Role-Bindings and Cluster-Role, Cluster-Role-Bindings</h3>
+<div class="highlight"><pre><span></span><code><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">components</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">filebeat</span><span class="p">:</span>
+<span class="w">      </span><span class="c1"># ServiceAccount</span>
+<span class="w">      </span><span class="nt">service_account</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">        </span><span class="nt">create</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">      </span><span class="c1"># ROLE + Binding</span>
+<span class="w">      </span><span class="nt">role</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">binding</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">subjects</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
+<span class="w">          </span><span class="nt">roleRef</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io</span>
+<span class="w">            </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Role</span>
+<span class="w">        </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;&quot;</span>
+<span class="w">            </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secrets</span>
+<span class="w">            </span><span class="nt">verbs</span><span class="p">:</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">create</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">delete</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;&quot;</span>
+<span class="w">            </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pods</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pods/log</span>
+<span class="w">            </span><span class="nt">verbs</span><span class="p">:</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">get</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">create</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">delete</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">list</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">watch</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
+</code></pre></div>
+<p>produces the following resource</p>
+<div class="highlight"><pre><span></span><code><span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Role</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filebeat</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filebeat</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filebeat</span>
+<span class="nt">rules</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;&quot;</span>
+<span class="w">    </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secrets</span>
+<span class="w">    </span><span class="nt">verbs</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">create</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">delete</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;&quot;</span>
+<span class="w">    </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pods</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pods/log</span>
+<span class="w">    </span><span class="nt">verbs</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">get</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">create</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">delete</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">list</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">watch</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RoleBinding</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filebeat</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filebeat</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filebeat</span>
+<span class="nt">roleRef</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io</span>
+<span class="w">  </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Role</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filebeat</span>
+<span class="nt">subjects</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filebeat</span>
+<span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filebeat</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filebeat</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filebeat</span>
+</code></pre></div>
+<h2 id="podsecuritypolicy">PodSecurityPolicy</h2>
+<p>The <code>spec</code> is relatively raw here, since its too diverse to be automated enough.
+Annotations and labels are merged from global and PSP ones.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">components</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">drone</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">pod_security_policy</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">xxx</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">yyy</span>
+<span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">yyy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">zzz</span>
+<span class="w">        </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">privileged</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">          </span><span class="c1"># Required to prevent escalations to root.</span>
+<span class="w">          </span><span class="nt">allowPrivilegeEscalation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">          </span><span class="c1"># This is redundant with non-root + disallow privilege escalation,</span>
+<span class="w">          </span><span class="c1"># but we can provide it for defense in depth.</span>
+<span class="w">          </span><span class="nt">requiredDropCapabilities</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ALL</span>
+<span class="w">          </span><span class="c1"># Allow core volume types.</span>
+<span class="w">          </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;configMap&quot;</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;emptyDir&quot;</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;projected&quot;</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;secret&quot;</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;downwardAPI&quot;</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;persistentVolumeClaim&quot;</span>
+<span class="w">          </span><span class="nt">hostNetwork</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">          </span><span class="nt">hostIPC</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">          </span><span class="nt">hostPID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">          </span><span class="nt">runAsUser</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">rule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;MustRunAsNonRoot&quot;</span>
+<span class="w">          </span><span class="nt">seLinux</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">rule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;RunAsAny&quot;</span>
+<span class="w">          </span><span class="nt">supplementalGroups</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">rule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;MustRunAs&quot;</span>
+<span class="w">            </span><span class="nt">ranges</span><span class="p">:</span>
+<span class="w">              </span><span class="c1"># Forbid adding the root group.</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">                </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">65535</span>
+<span class="w">          </span><span class="nt">fsGroup</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">rule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;MustRunAs&quot;</span>
+<span class="w">            </span><span class="nt">ranges</span><span class="p">:</span>
+<span class="w">              </span><span class="c1"># Forbid adding the root group.</span>
+<span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">                </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">65535</span>
+<span class="w">          </span><span class="nt">readOnlyRootFilesystem</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</code></pre></div>
+<p>produces the following resource</p>
+<div class="highlight"><pre><span></span><code><span class="nn">---</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">policy/v1beta1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PodSecurityPolicy</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">manifests.kapicorp.com/generated</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">    </span><span class="nt">xxx</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">yyy</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">app.kubernetes.io/component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">go</span>
+<span class="w">    </span><span class="nt">app.kubernetes.io/managed-by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kapitan</span>
+<span class="w">    </span><span class="nt">app.kubernetes.io/part-of</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">drone</span>
+<span class="w">    </span><span class="nt">app.kubernetes.io/version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span>
+<span class="w">    </span><span class="nt">yyy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">zzz</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">drone</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">drone</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">allowPrivilegeEscalation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">fsGroup</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">ranges</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">65535</span>
+<span class="w">        </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">rule</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MustRunAs</span>
+<span class="w">  </span><span class="nt">hostIPC</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">hostNetwork</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">hostPID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">privileged</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">readOnlyRootFilesystem</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">requiredDropCapabilities</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ALL</span>
+<span class="w">  </span><span class="nt">runAsUser</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">rule</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MustRunAsNonRoot</span>
+<span class="w">  </span><span class="nt">seLinux</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">rule</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RunAsAny</span>
+<span class="w">  </span><span class="nt">supplementalGroups</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">ranges</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">65535</span>
+<span class="w">        </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">rule</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MustRunAs</span>
+<span class="w">  </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">configMap</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">emptyDir</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">projected</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secret</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">downwardAPI</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">persistentVolumeClaim</span>
+</code></pre></div>
+<h2 id="defining-default-values-for-multiple-components">Defining default values for multiple components</h2>
+<p>Sometimes, when defining many components, you and up repeating many repeating configurations.
+With this generator, you can define defaults in 2 ways:</p>
+<h3 id="global-generator-defaults">Global Generator Defaults</h3>
+<p>The <a href="../../../inventory/classes/kapitan/generators/manifests.yml">global defaults</a> can be used to set defaults for every component being generated.</p>
+<p>As you can see, some defaults are already set:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">generators</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">manifest</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default_config</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deployment</span>
+<span class="w">      </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">        </span><span class="s">&quot;manifests.kapicorp.com/generated&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<p>You do not have to change that class directly, as long as you add to the same inventory structure for another class.</p>
+<p>For instance, when we enable the <a href="../../../inventory/classes/features/tesoro.yml"><code>features.tesoro</code></a> class, we can see that we are adding the following yaml fragment:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">generators</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">manifest</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">default_config</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">globals</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">secrets</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">tesoro.kapicorp.com</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">enabled</span>
+</code></pre></div>
+<p>Which has the effect to add the <code>tesoro.kapicorp.com: enabled</code> label to every generated configMap resource.</p>
+<h3 id="application-defaults">Application defaults</h3>
+<p>You can also create application defaults, where an application is a class/profile that can be associated to multiple components.</p>
+<p>For instance, let's assume you have the following definition for an application class called <code>microservices</code></p>
+<div class="highlight"><pre><span></span><code><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">applications</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">microservices</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">component_defaults</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">        </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">KAPITAN_APPLICATION</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">microservices</span>
+</code></pre></div>
+<p>Every component that belongs to that application class will receive the defaults for the application.
+To associate a component to an application, use the <code>application</code> directive.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">components</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">echo-server</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">application</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">microservices</span>
+<span class="w">      </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jmalloc/echo-server</span>
+</code></pre></div>
+<p>Compiling, kapitan will generate a <em>deployment</em> with image <code>jmalloc/echo-server</code>, 3 replicas, an annotation and an env variable.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">manifests.kapicorp.com/generated</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo-server</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo-server</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tutorial</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo-server</span>
+<span class="w">  </span><span class="nt">strategy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">rollingUpdate</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">maxSurge</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">maxUnavailable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RollingUpdate</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo-server</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KAPITAN_APPLICATION</span>
+<span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">microservices</span>
+<span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jmalloc/echo-server</span>
+<span class="w">          </span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span>
+<span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">echo-server</span>
+<span class="w">      </span><span class="nt">restartPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Always</span>
+<span class="w">      </span><span class="nt">terminationGracePeriodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+</code></pre></div>
+
+
+  
+
+
+
+  <form class="md-feedback" name="feedback" hidden>
+    <fieldset>
+      <legend class="md-feedback__title">
+        Was this page helpful?
+      </legend>
+      <div class="md-feedback__inner">
+        <div class="md-feedback__list">
+          
+            <button class="md-feedback__icon md-icon" type="submit" title="This page was helpful" data-md-value="1">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 0-8-8 8 8 0 0 0-8 8 8 8 0 0 0 8 8 8 8 0 0 0 8-8m2 0a10 10 0 0 1-10 10A10 10 0 0 1 2 12 10 10 0 0 1 12 2a10 10 0 0 1 10 10M10 9.5c0 .8-.7 1.5-1.5 1.5S7 10.3 7 9.5 7.7 8 8.5 8s1.5.7 1.5 1.5m7 0c0 .8-.7 1.5-1.5 1.5S14 10.3 14 9.5 14.7 8 15.5 8s1.5.7 1.5 1.5m-5 7.73c-1.75 0-3.29-.73-4.19-1.81L9.23 14c.45.72 1.52 1.23 2.77 1.23s2.32-.51 2.77-1.23l1.42 1.42c-.9 1.08-2.44 1.81-4.19 1.81Z"/></svg>
+            </button>
+          
+            <button class="md-feedback__icon md-icon" type="submit" title="This page could be improved" data-md-value="0">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 0-8-8 8 8 0 0 0-8 8 8 8 0 0 0 8 8 8 8 0 0 0 8-8m2 0a10 10 0 0 1-10 10A10 10 0 0 1 2 12 10 10 0 0 1 12 2a10 10 0 0 1 10 10m-6.5-4c.8 0 1.5.7 1.5 1.5s-.7 1.5-1.5 1.5-1.5-.7-1.5-1.5.7-1.5 1.5-1.5M10 9.5c0 .8-.7 1.5-1.5 1.5S7 10.3 7 9.5 7.7 8 8.5 8s1.5.7 1.5 1.5m2 4.5c1.75 0 3.29.72 4.19 1.81l-1.42 1.42C14.32 16.5 13.25 16 12 16s-2.32.5-2.77 1.23l-1.42-1.42C8.71 14.72 10.25 14 12 14Z"/></svg>
+            </button>
+          
+        </div>
+        <div class="md-feedback__note">
+          
+            <div data-md-value="1" hidden>
+              
+              
+                
+              
+              
+                Thanks for your feedback!
+              
+            </div>
+          
+            <div data-md-value="0" hidden>
+              
+              
+                
+              
+              
+                Thanks for your feedback! Help us improve this page by using our <a href="..." target="_blank" rel="noopener">feedback form</a>.
+              
+            </div>
+          
+        </div>
+      </div>
+    </fieldset>
+  </form>
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../tutorial/basegenerator/" class="md-footer__link md-footer__link--prev" aria-label="Previous: BaseGenerator" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              BaseGenerator
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../terraform/" class="md-footer__link md-footer__link--next" aria-label="Next: Terraform" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Terraform
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      <a href="#__consent">Change cookie settings</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    <a href="https://twitter.com/kapitandev" target="_blank" rel="noopener" title="kapitan on Twitter" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg>
+    </a>
+  
+    
+    
+    <a href="https://kubernetes.slack.com/archives/C981W2HD3" target="_blank" rel="noopener" title="#kapitan slack channel" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M94.12 315.1c0 25.9-21.16 47.06-47.06 47.06S0 341 0 315.1c0-25.9 21.16-47.06 47.06-47.06h47.06v47.06zm23.72 0c0-25.9 21.16-47.06 47.06-47.06s47.06 21.16 47.06 47.06v117.84c0 25.9-21.16 47.06-47.06 47.06s-47.06-21.16-47.06-47.06V315.1zm47.06-188.98c-25.9 0-47.06-21.16-47.06-47.06S139 32 164.9 32s47.06 21.16 47.06 47.06v47.06H164.9zm0 23.72c25.9 0 47.06 21.16 47.06 47.06s-21.16 47.06-47.06 47.06H47.06C21.16 243.96 0 222.8 0 196.9s21.16-47.06 47.06-47.06H164.9zm188.98 47.06c0-25.9 21.16-47.06 47.06-47.06 25.9 0 47.06 21.16 47.06 47.06s-21.16 47.06-47.06 47.06h-47.06V196.9zm-23.72 0c0 25.9-21.16 47.06-47.06 47.06-25.9 0-47.06-21.16-47.06-47.06V79.06c0-25.9 21.16-47.06 47.06-47.06 25.9 0 47.06 21.16 47.06 47.06V196.9zM283.1 385.88c25.9 0 47.06 21.16 47.06 47.06 0 25.9-21.16 47.06-47.06 47.06-25.9 0-47.06-21.16-47.06-47.06v-47.06h47.06zm0-23.72c-25.9 0-47.06-21.16-47.06-47.06 0-25.9 21.16-47.06 47.06-47.06h117.84c25.9 0 47.06 21.16 47.06 47.06 0 25.9-21.16 47.06-47.06 47.06H283.1z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+  
+    
+  
+
+
+  
+    
+  
+
+
+
+  
+
+
+<h4>Cookie consent</h4>
+<p>We use cookies to recognize your repeated visits and preferences, as well as to measure the effectiveness of our documentation and whether users find what they're searching for. With your consent, you're helping us to make our documentation better.</p>
+<input class="md-toggle" type="checkbox" id="__settings" >
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+      
+      
+        
+        
+      
+      <li class="task-list-item">
+        <label class="task-list-control">
+          <input type="checkbox" name="analytics" checked>
+          <span class="task-list-indicator"></span>
+          Google Analytics
+        <label>
+      </li>
+    
+      
+      
+        
+        
+      
+      <li class="task-list-item">
+        <label class="task-list-control">
+          <input type="checkbox" name="github" checked>
+          <span class="task-list-indicator"></span>
+          GitHub
+        <label>
+      </li>
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+    
+      <label class="md-button" for="__settings">Manage settings</label>
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout(function(){document.querySelector("[data-md-component=consent]").hidden=!1},250);var action,form=document.forms.consent;for(action of["submit","reset"])form.addEventListener(action,function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);console.log(new FormData(form)),__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map(function(e){return[e,!0]}))),location.hash="",location.reload()})</script>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["announce.dismiss", "content.code.annotate", "content.tabs.link", "navigation.instant", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d6c3db9e.min.js"></script>
+      
+    
+  </body>
+</html>
