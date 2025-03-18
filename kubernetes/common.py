@@ -358,6 +358,10 @@ class VPAConfigSpec(kgenlib.BaseModel):
     update_mode: str = "Auto"
     resource_policy: Dict[str, List[Dict]] = {}
 
+class HPAConfigSpec(kgenlib.BaseModel):
+    min_replicas: Optional[int] = None
+    max_replicas: Optional[int] = None
+    metrics: List[Dict[str, Any]] = []
 
 class ServiceMonitororConfigSpec(kgenlib.BaseModel):
     endpoints: list = []
@@ -389,7 +393,7 @@ class WorkloadConfigSpec(KubernetesResourceSpec, ContainerSpec):
     grace_period: int = 30
     host_network: Optional[bool] = None
     host_pid: Optional[bool] = None
-    hpa: dict = {}
+    hpa: Optional[HPAConfigSpec] = None
     image_pull_secrets: list = []
     init_containers: Optional[Dict[str, Union[InitContainerSpec, None]]] = {}
     istio_policy: dict = {}
