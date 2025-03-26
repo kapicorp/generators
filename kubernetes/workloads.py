@@ -338,7 +338,7 @@ class Container(BaseModel):
     @staticmethod
     def find_key_in_config(key, configs):
         for name, config in configs.items():
-            if key in config.data.keys():
+            if key in config.data or key in config.string_data:
                 return name
         raise (
             BaseException(
