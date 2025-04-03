@@ -44,7 +44,7 @@ class KedaTriggerAuthentication(KubernetesResource):
 
 class PodDisruptionBudget(KubernetesResource):
     kind: str = "PodDisruptionBudget"
-    api_version: str = "policy/v1beta1"
+    api_version: str = "policy/v1"
 
     def body(self):
         super().body()
