@@ -77,7 +77,7 @@ class VerticalPodAutoscaler(KubernetesResource):
 
 class HorizontalPodAutoscaler(KubernetesResource):
     kind: str = "HorizontalPodAutoscaler"
-    api_version: str = "autoscaling.k8s.io/v2beta2"
+    api_version: str = "autoscaling.k8s.io/v2"
 
     def body(self):
         super().body()
