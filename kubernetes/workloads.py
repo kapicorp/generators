@@ -637,7 +637,8 @@ class Components(kgenlib.BaseStore):
         if self.config.type != "job" and (
             self.config.pdb_min_available or self.config.auto_pdb
         ):
-            self._add_component(PodDisruptionBudget, workload=workload)
+            config_attr = "pdb_min_available" if self.config.pdb_min_available else "auto_pdb"
+            self._add_component(PodDisruptionBudget, config_attr, workload=workload)
 
         self.add(workload)
 
