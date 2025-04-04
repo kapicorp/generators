@@ -137,7 +137,7 @@ class Workload(KubernetesResource):
                     "podAffinityTerm": {
                         "labelSelector": {
                             "matchExpressions": [
-                                {"key": "app", "operator": "In", "values": [name]}
+                                {"key": "name", "operator": "In", "values": [name]}
                             ]
                         },
                         "topologyKey": "kubernetes.io/hostname",
@@ -155,7 +155,7 @@ class Workload(KubernetesResource):
                     "podAffinityTerm": {
                         "labelSelector": {
                             "matchExpressions": [
-                                {"key": "app", "operator": "In", "values": [name]}
+                                {"key": "name", "operator": "In", "values": [name]}
                             ]
                         },
                         "topologyKey": "topology.kubernetes.io/zone",
