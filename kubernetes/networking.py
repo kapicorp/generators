@@ -32,8 +32,8 @@ class Ingress(KubernetesResource):
         config = self.config
 
         if config.default_backend:
-            self.root.spec.backend.service.name = config.default_backend.get("name")
-            self.root.spec.backend.service.port = config.default_backend.get("port", 80)
+            self.root.spec.defaultBackend.service.name = config.default_backend.get("name")
+            self.root.spec.defaultBackend.service.port = config.default_backend.get("port", 80)
         if config.paths:
             host = config.host
             paths = config.paths
