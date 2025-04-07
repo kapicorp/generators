@@ -31,6 +31,10 @@ class ServiceAccount(KubernetesResource):
             else:
                 self.name = config.name or self.name
         super().body()
+        # Force the name again after super().body()
+        # This is needed for when we are setting service_account.name.
+        # Wihthout this, only labels.name is set correctly
+        self.root.metadata.name = self.name
         if self.spec:
             self.add_annotations(self.spec.annotations)
 
