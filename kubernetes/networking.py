@@ -47,7 +47,7 @@ class Ingress(KubernetesResource):
 
 class GoogleManagedCertificate(KubernetesResource):
     kind: str = "ManagedCertificate"
-    api_version: str = "networking.gke.io/v1beta1"
+    api_version: str = "networking.gke.io/v1"
 
     def body(self):
         super().body()
