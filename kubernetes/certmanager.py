@@ -13,7 +13,7 @@ class CertManagerIssuer(KubernetesResource):
     def body(self):
         config = self.config
         super().body()
-        self.root.spec = config.get("spec")
+        self.root.spec = config.spec
 
 
 @kgenlib.register_generator(path="certmanager.cluster_issuer")
@@ -24,7 +24,7 @@ class CertManagerClusterIssuer(KubernetesResource):
     def body(self):
         config = self.config
         super().body()
-        self.root.spec = config.get("spec")
+        self.root.spec = config.spec
 
 
 @kgenlib.register_generator(path="certmanager.certificate")
@@ -35,4 +35,4 @@ class CertManagerCertificate(KubernetesResource):
     def body(self):
         config = self.config
         super().body()
-        self.root.spec = config.get("spec")
+        self.root.spec = config.spec
