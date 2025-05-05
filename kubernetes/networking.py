@@ -410,6 +410,7 @@ class IngressComponent(kgenlib.BaseStore):
             )
             self.add(
                 GoogleManagedCertificate(
-                    name=certificate_name, config={"domains": domains}
+                    name=certificate_name, namespace=self.config.namespace,
+                    config={"domains": domains}
                 )
             )
