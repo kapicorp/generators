@@ -634,7 +634,7 @@ class Components(kgenlib.BaseStore):
                         ClusterRoleBinding, "cluster_role", role=role, sa=sa
                     )
         self._add_component(BackendConfig, "backend_config", spec=self.config.backend_config)
-        self._add_component(FrontendConfig, "frontend_config", spec=self.config.backend_config)
+        self._add_component(FrontendConfig, "frontend_config", spec=self.config.frontend_config)
 
 
         # Handling a special case where pdb_min_available or auto_pdb is set, but config.type isn't "job"
