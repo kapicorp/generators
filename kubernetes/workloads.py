@@ -24,7 +24,7 @@ from .common import (
     WorkloadTypes,
     kgenlib,
 )
-from .gke import BackendConfig
+from .gke import BackendConfig, FrontendConfig
 from .istio import IstioPolicy
 from .networking import NetworkPolicy, Service
 from .prometheus import PrometheusRule, ServiceMonitor
@@ -117,7 +117,7 @@ class Workload(KubernetesResource):
         affinity = self.root.spec.template.spec.affinity
         if config.prefer_pods_in_node_with_expression and not config.node_selector:
             affinity.nodeAffinity.setdefault(
-                "preferredDuringSchedulingIgnoredDuringExecutio", []
+                "preferredDuringSchedulingIgnoredDuringExecution", []
             )
             affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution.append(
                 {
@@ -504,6 +504,7 @@ class PodSecurityPolicy(KubernetesResource):
     apply_patches=[
         "generators.manifest.default_config",
         'applications."{application}".component_defaults',
+        'generators.manifest.resource_defaults.{type}'
     ],
 )
 class Components(kgenlib.BaseStore):
@@ -521,12 +522,14 @@ class Components(kgenlib.BaseStore):
         if config_attr and getattr(self.config, config_attr):
             spec = spec or getattr(self.config, config_attr, {})
             name = name or self.name
+
             component = component_class(
                 name=name, config=self.config, spec=spec, workload=workload, **kwargs
             )
             self.add(component)
             logger.debug(f"Added component {component.root.metadata} for {self.name}.")
             return component
+
 
     def _generate_and_add_multiple_objects(
         self, generating_class, config_attr, workload
@@ -630,8 +633,9 @@ class Components(kgenlib.BaseStore):
                     self._add_component(
                         ClusterRoleBinding, "cluster_role", role=role, sa=sa
                     )
+        self._add_component(BackendConfig, "backend_config", spec=self.config.backend_config)
+        self._add_component(FrontendConfig, "frontend_config", spec=self.config.backend_config)
 
-        self._add_component(BackendConfig, "backend_config")
 
         # Handling a special case where pdb_min_available or auto_pdb is set, but config.type isn't "job"
         if self.config.type != "job" and (
