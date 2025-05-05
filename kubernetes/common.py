@@ -386,6 +386,7 @@ class WorkloadConfigSpec(KubernetesResourceSpec, ContainerSpec):
     application: Optional[str] = None
     auto_pdb: bool = False
     backend_config: dict = {}
+    frontend_config: dict = {}
     cluster_role: Optional[Dict] = None
     containers: dict = {}
     deployment_progress_deadline_seconds: int | None = None
