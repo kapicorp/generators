@@ -732,12 +732,35 @@ class BaseGenerator:
             logger.debug(
                 f"Running global generator {func.__name__} with activation path {activation_path}"
             )
-            for _, inventory in self.global_inventory.items():
-                self.expand_and_run(
-                    generator_function=func,
-                    generator_params=params,
-                    inventory=inventory,
-                )
+
+            # Get the current target name for global_target filtering
+            current_target_name = current_target.get()
+
+            for target_name, inventory in self.global_inventory.items():
+
+                # For other targets, check global_target parameter
+                inventory_global_target = findpath(inventory.parameters, "global_target")
+
+                # Process if: global_target not set/empty (backward compatibility)
+                # OR global_target matches current target
+                # OR it's the current target
+                if (not inventory_global_target
+                        or inventory_global_target == current_target_name
+                        or target_name == current_target_name):
+                    logger.debug(
+                        f"Processing inventory {target_name} "
+                        f"(global_target={inventory_global_target or 'not set'})"
+                    )
+                    self.expand_and_run(
+                        generator_function=func,
+                        generator_params=params,
+                        inventory=inventory,
+                    )
+                else:
+                    logger.debug(
+                        f"Skipping inventory {target_name} (global_target={inventory_global_target}) "
+                        f"- not listening to current target {current_target_name}"
+                    )
         else:
             logger.debug(
                 f"Skipping global generator {func.__name__} with params {params}"
