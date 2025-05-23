@@ -26,7 +26,7 @@ class ArgoCDApplication(KubernetesResource):
     def body(self):
         self.root.spec.project = self.config.project
         destination = self.config.destination
-        self.root.spec.destination.name = self.cluster.display_name or destination.name
+        self.root.spec.destination.name = self.cluster.display_name or destination.get("name")
         self.root.spec.destination.namespace = destination.get("namespace")
         self.root.spec.source = self.config.source
         self.root.spec.syncPolicy = self.config.sync_policy
