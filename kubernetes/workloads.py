@@ -575,11 +575,10 @@ class Components(kgenlib.BaseStore):
             workload = StatefulSet(name=name, config=config.model_dump())
         elif config.type == WorkloadTypes.DAEMONSET:
             workload = DaemonSet(name=name, config=config.model_dump())
+        elif config.type == WorkloadTypes.CRONJOB:
+            workload = CronJob(name=name, config=config.model_dump())
         elif config.type == WorkloadTypes.JOB:
-            if config.schedule:
-                workload = CronJob(name=name, config=config.model_dump())
-            else:
-                workload = Job(name=name, config=config.model_dump())
+            workload = Job(name=name, config=config.model_dump())
         elif config.type == WorkloadTypes.CLOUD_RUN_SERVICE:
             workload = CloudRunService(name=name, config=config.model_dump())
         else:
@@ -637,8 +636,8 @@ class Components(kgenlib.BaseStore):
         self._add_component(FrontendConfig, "frontend_config", spec=self.config.frontend_config)
 
 
-        # Handling a special case where pdb_min_available or auto_pdb is set, but config.type isn't "job"
-        if self.config.type != "job" and (
+        # Handling a special case where pdb_min_available or auto_pdb is set, but config.type isn't "job" or "cronjob"
+        if (self.config.type != WorkloadTypes.JOB and self.config.type != WorkloadTypes.CRONJOB)  and (
             self.config.pdb_min_available or self.config.auto_pdb
         ):
             config_attr = "pdb_min_available" if self.config.pdb_min_available else "auto_pdb"
